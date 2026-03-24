@@ -9,6 +9,7 @@ public sealed record RootCauseCandidate(
     string Explanation,
     double Confidence,
     IReadOnlyList<string> Signals,
+    IReadOnlyList<string> LikelyCauses,
     IReadOnlyList<string> SuggestedFixes,
     string? DiagnosticId = null,
     string? GroupId = null);

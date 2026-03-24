@@ -29,6 +29,26 @@
 - Added configuration-driven AI provider catalog/health services and `Ai` options binding in infrastructure DI.
 - Added AI contracts and API/infrastructure/application test coverage for provider catalog and health status behavior.
 
+- Integrated `AIExplanationEnrichmentSlice`:
+- Added optional AI explanation enrichment in `AnalysisService` via `IAiExplanationEnricher` and provider-routed `ConfiguredAiExplanationEnricher` implementation.
+- Added AI processing metadata (`AiProcessingMetadata`) and analysis warnings to domain/contracts/API mapping and analysis responses.
+- Added `Ai.Features.ExplanationEnrichment` options + appsettings defaults for provider/model/timeout/token/temperature/fallback controls.
+- Added API/OpenAPI/application/infrastructure tests covering enrichment success/failure metadata projection, warnings, and provider response parsing.
+- Integrated `AIFixesAndLikelyCausesSlice`:
+- Expanded deterministic likely-cause and suggested-fix coverage across root-cause insights for .NET/TypeScript/Python/npm/Vite focused signatures.
+- Extended AI explanation enricher payload handling to include likely causes and suggested fixes, with deterministic fallbacks when AI responses are partial.
+- Updated root-cause domain/contracts/mapping projections and associated API/OpenAPI/application/infrastructure tests.
+- Updated API request/response examples and endpoint docs for likely-cause behavior consistency.
+- Integrated `AIRootCauseNarrativeSlice`:
+- Added deterministic grouped build-log narrative generation (`AnalysisNarrative`, `AnalysisNarrativeFactory`) for multi-diagnostic logs.
+- Added provider-routed AI root-cause narrative generation via `IAiRootCauseNarrativeGenerator` and `ConfiguredAiRootCauseNarrativeGenerator`.
+- Extended build-log contracts/mappers/appsettings/OpenAPI coverage with `narrative` output and AI `feature` metadata for per-request provenance.
+- Added application/API/OpenAPI/infrastructure tests for deterministic narrative projection and AI narrative success/failure fallback behavior.
+- Integrated `AINarrativeToggleAndTaskProvenanceSlice`:
+- Split grouped build-log narrative generation behind a dedicated `useAiRootCauseNarrative` request option instead of piggybacking on `useAiEnrichment`.
+- Allowed build-log analysis to request primary-candidate AI enrichment and grouped narrative generation independently within the same request.
+- Extended processing metadata/contracts/OpenAPI with `aiTasks` so multi-task AI provenance is explicit instead of overloading a single AI status object.
+- Updated API/application tests and docs to cover separate AI toggles, combined-task requests, and per-task provenance projection.
 ### Fixed
 - Resolved `NpmDiagnosticParser` compile failure (`CS0136`) by renaming shadowed local variables in the missing-script parsing branch.
 - Resolved `RuleService` compile failure (`CS0246`) by restoring `InsightLogger.Application.Analyses.Services` import for `DiagnosticGroupingService` and `RootCauseRankingService`.
@@ -37,3 +57,6 @@
 - Preserved prior rule-persistence/recurrence fixes during scoped-rule integration by keeping `AnalysisService` persistence wired to `RuleEvaluationResult.Applications`, retaining SQLite-safe client-side ordering in related-rule context lookup, and persisting direct `RecordMatchesAsync` updates with `SaveChangesAsync`.
 - Resolved `RuleServiceRuleTestingTests` compile errors after scoped-rule integration by restoring analysis-service imports and replacing removed `RuleTestResultDto.Matched` assertions with `Matches`-based assertions.
 - Adjusted `AnalysisServiceRuleMatchingTests.AnalyzeAsync_Respects_Project_And_Repository_Scope_From_Context` assertions to accept both diagnostic and group `RuleMatch` targets while enforcing scoped-condition match metadata on each result.
+
+
+

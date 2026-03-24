@@ -22,7 +22,8 @@ public static class AnalysisContractMapper
             CorrelationId: correlationId,
             Context: BuildBuildLogContext(request),
             Persist: request.Options?.Persist ?? false,
-            UseAiEnrichment: request.Options?.UseAiEnrichment ?? false);
+            UseAiEnrichment: request.Options?.UseAiEnrichment ?? false,
+            UseAiRootCauseNarrative: request.Options?.UseAiRootCauseNarrative ?? false);
     }
 
     public static AnalyzeInputCommand ToCommand(AnalyzeCompilerErrorRequest request, string? correlationId)
@@ -36,7 +37,8 @@ public static class AnalysisContractMapper
             CorrelationId: correlationId,
             Context: BuildCompilerErrorContext(request),
             Persist: request.Options?.Persist ?? false,
-            UseAiEnrichment: request.Options?.UseAiEnrichment ?? false);
+            UseAiEnrichment: request.Options?.UseAiEnrichment ?? false,
+            UseAiRootCauseNarrative: false);
     }
 
     public static AnalyzeBuildLogResponse ToBuildLogResponse(AnalysisResult result, AnalyzeRequestOptionsContract? options = null)
@@ -60,7 +62,9 @@ public static class AnalysisContractMapper
             Groups: includeGroups ? result.Groups.Select(ToContract).ToList() : Array.Empty<DiagnosticGroupContract>(),
             Diagnostics: includeDiagnostics ? result.Diagnostics.Select(ToContract).ToList() : Array.Empty<DiagnosticContract>(),
             MatchedRules: result.MatchedRules.Select(ToContract).ToList(),
-            Processing: includeProcessing ? ToContract(result.Processing) : null);
+            Narrative: result.Narrative is null ? null : ToContract(result.Narrative),
+            Processing: includeProcessing ? ToContract(result.Processing) : null,
+            Warnings: result.Warnings);
     }
 
     public static AnalyzeCompilerErrorResponse ToCompilerErrorResponse(AnalysisResult result, AnalyzeRequestOptionsContract? options = null)
@@ -79,11 +83,12 @@ public static class AnalysisContractMapper
             ToolDetected: ToContractTool(result.ToolDetected),
             Diagnostic: primaryDiagnostic is null ? null : ToContract(primaryDiagnostic),
             Explanation: primaryCandidate?.Explanation ?? "A structured diagnostic was detected, but no specialized explanation is available yet.",
-            LikelyCauses: BuildLikelyCauses(primaryDiagnostic),
+            LikelyCauses: primaryCandidate?.LikelyCauses ?? BuildLikelyCauses(primaryDiagnostic),
             SuggestedFixes: primaryCandidate?.SuggestedFixes ?? Array.Empty<string>(),
             Confidence: primaryCandidate?.Confidence ?? 0d,
             MatchedRules: result.MatchedRules.Select(ToContract).ToList(),
-            Processing: includeProcessing ? ToContract(result.Processing) : null);
+            Processing: includeProcessing ? ToContract(result.Processing) : null,
+            Warnings: result.Warnings);
     }
 
     public static bool TryParseTool(string? value, out ToolKind toolKind)
@@ -200,6 +205,19 @@ public static class AnalysisContractMapper
         return result.RootCauseCandidates.FirstOrDefault();
     }
 
+
+    private static AnalysisNarrativeContract ToContract(AnalysisNarrative narrative) =>
+        new(
+            Summary: narrative.Summary,
+            GroupSummaries: narrative.GroupSummaries,
+            RecommendedNextSteps: narrative.RecommendedNextSteps,
+            Source: narrative.Source,
+            Provider: narrative.Provider,
+            Model: narrative.Model,
+            Status: narrative.Status,
+            FallbackUsed: narrative.FallbackUsed,
+            Reason: narrative.Reason);
+
     private static RootCauseCandidateContract ToContract(RootCauseCandidate candidate) =>
         new(
             Fingerprint: candidate.Fingerprint.Value,
@@ -207,6 +225,7 @@ public static class AnalysisContractMapper
             Explanation: candidate.Explanation,
             Confidence: candidate.Confidence,
             Signals: candidate.Signals,
+            LikelyCauses: candidate.LikelyCauses,
             SuggestedFixes: candidate.SuggestedFixes);
 
     private static DiagnosticGroupContract ToContract(DiagnosticGroup group) =>
@@ -253,7 +272,19 @@ public static class AnalysisContractMapper
             ToolDetectionConfidence: metadata.ToolDetectionConfidence,
             ParseConfidence: metadata.ParseConfidence,
             UnparsedSegmentCount: metadata.UnparsedSegmentCount,
-            Notes: metadata.Notes);
+            Notes: metadata.Notes,
+            Ai: metadata.Ai is null ? null : ToContract(metadata.Ai),
+            AiTasks: metadata.AiTasks.Select(ToContract).ToArray());
+
+    private static AiProcessingMetadataContract ToContract(AiProcessingMetadata metadata) =>
+        new(
+            Requested: metadata.Requested,
+            Provider: metadata.Provider,
+            Model: metadata.Model,
+            Status: metadata.Status,
+            FallbackUsed: metadata.FallbackUsed,
+            Reason: metadata.Reason,
+            Feature: metadata.Feature);
 
     private static IReadOnlyList<string> BuildLikelyCauses(DiagnosticRecord? diagnostic)
     {

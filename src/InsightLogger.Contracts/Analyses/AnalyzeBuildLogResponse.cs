@@ -10,4 +10,6 @@ public sealed record AnalyzeBuildLogResponse(
     IReadOnlyList<DiagnosticGroupContract> Groups,
     IReadOnlyList<DiagnosticContract> Diagnostics,
     IReadOnlyList<MatchedRuleContract> MatchedRules,
-    ProcessingMetadataContract? Processing);
+    AnalysisNarrativeContract? Narrative,
+    ProcessingMetadataContract? Processing,
+    IReadOnlyList<string>? Warnings = null);

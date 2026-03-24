@@ -207,6 +207,7 @@ public static class RuleContractMapper
             Explanation: candidate.Explanation,
             Confidence: candidate.Confidence,
             Signals: candidate.Signals,
+            LikelyCauses: candidate.LikelyCauses,
             SuggestedFixes: candidate.SuggestedFixes);
 
     private static ProcessingMetadataContract ToContract(ProcessingMetadata metadata) =>
@@ -218,7 +219,19 @@ public static class RuleContractMapper
             ToolDetectionConfidence: metadata.ToolDetectionConfidence,
             ParseConfidence: metadata.ParseConfidence,
             UnparsedSegmentCount: metadata.UnparsedSegmentCount,
-            Notes: metadata.Notes);
+            Notes: metadata.Notes,
+            Ai: metadata.Ai is null ? null : ToContract(metadata.Ai),
+            AiTasks: metadata.AiTasks.Select(ToContract).ToArray());
+
+    private static AiProcessingMetadataContract ToContract(AiProcessingMetadata metadata) =>
+        new(
+            Requested: metadata.Requested,
+            Provider: metadata.Provider,
+            Model: metadata.Model,
+            Status: metadata.Status,
+            FallbackUsed: metadata.FallbackUsed,
+            Reason: metadata.Reason,
+            Feature: metadata.Feature);
 
     private static IReadOnlyList<string> NormalizeValues(IReadOnlyList<string>? values)
         => values?
@@ -313,3 +326,6 @@ public static class RuleContractMapper
         _ => category.ToString().ToLowerInvariant()
     };
 }
+
+
+

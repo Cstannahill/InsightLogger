@@ -12,4 +12,5 @@ public sealed record AnalyzeInputCommand(
     IReadOnlyDictionary<string, string>? Context = null,
     bool Persist = false,
     bool UseAiEnrichment = false,
+    bool UseAiRootCauseNarrative = false,
     bool StoreRawContentWhenPersisting = false);

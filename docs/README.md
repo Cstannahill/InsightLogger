@@ -4,7 +4,7 @@ Project documentation for InsightLogger.
 
 ## Current implementation status
 
-The codebase now includes fifteen implemented scaffolding slices:
+The codebase now includes nineteen implemented scaffolding slices:
 
 1. InitialSlice
 - Core domain models for diagnostics and analyses
@@ -118,6 +118,31 @@ The codebase now includes fifteen implemented scaffolding slices:
 - Added default `Ai` configuration in API appsettings.
 - Added API/OpenAPI/application/infrastructure tests for health and provider metadata flows.
 
+16. AIExplanationEnrichmentSlice
+- Added optional AI explanation enrichment flow for primary root-cause candidate text in `AnalysisService` when `useAiEnrichment` is requested.
+- Added provider-routed `IAiExplanationEnricher` abstraction and configuration-driven `ConfiguredAiExplanationEnricher` implementation (Ollama and OpenAI-compatible providers).
+- Added AI processing metadata (`requested`, provider/model, status, fallback, reason) and analysis warnings to analysis domain/contracts/mappers.
+- Added `Ai.Features.ExplanationEnrichment` configuration model and appsettings defaults.
+- Added API/OpenAPI/application/infrastructure tests for AI enrichment metadata projection, warning behavior, and enricher provider routing/parsing.
+
+17. AIFixesAndLikelyCausesSlice
+- Expanded deterministic likely-cause and fix guidance coverage across analyzers (C#, TypeScript, Python, npm, and Vite focused signatures).
+- Extended AI explanation enrichment payload/response handling to optionally enrich explanation, likely causes, and suggested fixes while preserving deterministic fallbacks.
+- Updated root-cause domain/contracts/mapping surfaces to carry likely causes for grouped/build-log candidate projections and kept compiler-error likely-cause derivation deterministic.
+- Added/updated API/OpenAPI/application/infrastructure tests for likely-cause projection and AI enrichment payload parsing behavior.
+
+18. AIRootCauseNarrativeSlice
+- Added deterministic grouped build-log narrative projection via `AnalysisNarrativeFactory` for multi-diagnostic build logs.
+- Added optional provider-routed `IAiRootCauseNarrativeGenerator` / `ConfiguredAiRootCauseNarrativeGenerator` flow for AI-enriched grouped summaries and next-step narratives.
+- Extended build-log response contracts/mapping/OpenAPI surfaces with `narrative` metadata and tagged AI processing metadata with a `feature` discriminator.
+- Added application/API/OpenAPI/infrastructure tests covering deterministic narrative projection and AI narrative success/failure fallback behavior.
+
+19. AINarrativeToggleAndTaskProvenanceSlice
+- Added a dedicated `useAiRootCauseNarrative` request option so narrative generation can be requested independently from `useAiEnrichment`.
+- Updated analysis orchestration to run explanation enrichment and narrative generation as separate optional AI tasks within the same request.
+- Extended processing metadata/contracts/mappers/OpenAPI with `aiTasks` for explicit per-task AI provenance while retaining `ai` as a single-task convenience summary.
+- Added API/OpenAPI/application test updates and docs examples for separate toggles, combined-task requests, and per-task provenance responses.
+
 
 ## API description endpoint policy
 
@@ -138,6 +163,7 @@ The implemented slices align with the deterministic-first architecture in:
 
 Next planned increments remain:
 - async refactor rollout across API/application/persistence boundaries
+- persistence/query-time exposure for narrative-oriented historical analysis if narrative storage becomes valuable
 - API endpoint orchestration hardening for future modules
 
 ## Recent maintenance updates
@@ -202,3 +228,7 @@ Next planned increments remain:
 - Fixed `RuleServiceRuleTestingTests` compile regression after scoped-rule merge by restoring `InsightLogger.Application.Analyses.Services` import and updating assertions from removed `RuleTestResultDto.Matched` to `Matches` collection-based checks.
 - Updated scoped-rule analysis test expectations to allow both diagnostic and group rule-match targets while still requiring scoped-condition matches (`projectName`, `repository`) on all emitted matches.
 - Integrated AIHealthAndProviderMetadataSlice end-to-end: registered AI metadata query + provider catalog/health services in DI, mapped new health/provider endpoints, added AI contracts/mappers/configuration, and included corresponding API/OpenAPI/application/infrastructure test coverage.
+- Added API test-host logging filters to reduce expected test noise by suppressing `InsightLogger.Api.Middleware.ApiExceptionHandlingMiddleware` error logs and lowering `Microsoft.EntityFrameworkCore.Database.Command` to warning level during API test runs.
+- Integrated AINarrativeToggleAndTaskProvenanceSlice: split AI narrative execution behind `useAiRootCauseNarrative`, enabled combined AI task execution in one analysis request, and projected per-task provenance via `processing.aiTasks`.
+- Reduced noisy EF SQL command logs by setting `Logging:LogLevel:Microsoft.EntityFrameworkCore.Database.Command` to `Warning` in API appsettings defaults (including development), improving test output readability.
+- Fixed post-slice test compile regressions by restoring missing test imports for `IRuleRepository` usage and enabling `IWebHostBuilder.ConfigureLogging` extension resolution in API endpoint tests.

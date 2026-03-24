@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace InsightLogger.Contracts.Analyses;
 
 public sealed record ProcessingMetadataContract(
@@ -8,4 +10,6 @@ public sealed record ProcessingMetadataContract(
     double ToolDetectionConfidence,
     double ParseConfidence,
     int UnparsedSegmentCount,
-    string? Notes);
+    string? Notes,
+    AiProcessingMetadataContract? Ai,
+    IReadOnlyList<AiProcessingMetadataContract> AiTasks);

@@ -8,4 +8,5 @@ public sealed record RootCauseCandidateContract(
     string Explanation,
     double Confidence,
     IReadOnlyList<string> Signals,
+    IReadOnlyList<string> LikelyCauses,
     IReadOnlyList<string> SuggestedFixes);

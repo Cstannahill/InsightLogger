@@ -50,6 +50,7 @@ public sealed class AnalysisServiceRuleMatchingTests
             toolDetector,
             parserCoordinator,
             groupingService,
+            new AnalysisNarrativeFactory(),
             rankingService,
             ruleMatchingService,
             analysisPersistenceService: null);
@@ -95,6 +96,7 @@ public sealed class AnalysisServiceRuleMatchingTests
             toolDetector,
             parserCoordinator,
             groupingService,
+            new AnalysisNarrativeFactory(),
             rankingService,
             ruleMatchingService,
             analysisPersistenceService: null);

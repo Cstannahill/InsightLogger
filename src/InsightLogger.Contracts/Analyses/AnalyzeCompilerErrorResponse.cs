@@ -11,4 +11,5 @@ public sealed record AnalyzeCompilerErrorResponse(
     IReadOnlyList<string> SuggestedFixes,
     double Confidence,
     IReadOnlyList<MatchedRuleContract> MatchedRules,
-    ProcessingMetadataContract? Processing);
+    ProcessingMetadataContract? Processing,
+    IReadOnlyList<string>? Warnings = null);

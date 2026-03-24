@@ -38,6 +38,7 @@ public sealed class RootCauseRankingService
                 Explanation: insight.Explanation,
                 Confidence: confidence,
                 Signals: signals,
+                LikelyCauses: insight.LikelyCauses,
                 SuggestedFixes: insight.SuggestedFixes,
                 DiagnosticId: primary.Id,
                 GroupId: group.Fingerprint.Value));

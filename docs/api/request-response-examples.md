@@ -64,6 +64,11 @@ Build FAILED.",
         "diagnostic-code:CS0103",
         "category:missing-symbol"
       ],
+      "likelyCauses": [
+        "Typo in variable or member name",
+        "Missing declaration",
+        "Wrong scope or missing using/reference"
+      ],
       "suggestedFixes": [
         "Check the symbol name for a typo.",
         "Verify the symbol is declared before use.",
@@ -474,7 +479,7 @@ Content-Type: application/json
   "likelyCauses": [
     "Typo in variable or member name",
     "Missing declaration",
-    "Wrong scope"
+    "Wrong scope or missing using/reference"
   ],
   "suggestedFixes": [
     "Check whether 'builderz' was meant to be 'builder'.",
@@ -487,8 +492,10 @@ Content-Type: application/json
     "usedAi": true,
     "durationMs": 85,
     "ai": {
+      "requested": true,
       "provider": "openrouter",
       "model": "openai/gpt-5-mini",
+      "status": "completed",
       "fallbackUsed": false
     }
   }
@@ -596,7 +603,7 @@ Content-Type: application/json
     }
   },
   "warnings": [
-    "AI enrichment was requested but could not be completed. Deterministic analysis was returned instead."
+    "AI explanation enrichment was requested but could not be completed. Deterministic analysis was returned instead."
   ]
 }
 ```
@@ -848,5 +855,120 @@ GET /providers/ai
       }
     }
   ]
+}
+```
+
+---
+
+## Example 13: AI-Enriched Multi-Diagnostic Build Narrative
+
+This example uses the dedicated `useAiRootCauseNarrative` toggle rather than the primary-candidate `useAiEnrichment` flag.
+
+### Request
+
+```http
+POST /analyze/build-log
+Content-Type: application/json
+```
+
+```json
+{
+  "tool": "dotnet",
+  "content": "Program.cs(14,9): error CS0103: The name 'builderz' does not exist in the current context\nProgram.cs(15,9): error CS0103: The name 'servicez' does not exist in the current context",
+  "options": {
+    "persist": true,
+    "useAiEnrichment": false,
+    "useAiRootCauseNarrative": true,
+    "includeRawDiagnostics": true,
+    "includeGroups": true,
+    "includeProcessingMetadata": true
+  }
+}
+```
+
+### Response
+
+```json
+{
+  "analysisId": "anl_01HXYZ012",
+  "toolDetected": "dotnet",
+  "summary": {
+    "totalDiagnostics": 2,
+    "groupCount": 1,
+    "primaryIssueCount": 1,
+    "errorCount": 2,
+    "warningCount": 0
+  },
+  "rootCauseCandidates": [
+    {
+      "fingerprint": "fp_cs0103_name_missing",
+      "title": "Unknown symbol in current context",
+      "explanation": "The compiler cannot resolve a referenced name in the current scope.",
+      "confidence": 0.96,
+      "signals": [
+        "diagnostic-code:CS0103",
+        "category:missing-symbol",
+        "group-count:2"
+      ],
+      "likelyCauses": [
+        "Typo in variable or member name",
+        "Missing declaration",
+        "Wrong scope or missing using/reference"
+      ],
+      "suggestedFixes": [
+        "Check the symbol spelling.",
+        "Verify the symbol is declared before use."
+      ]
+    }
+  ],
+  "groups": [
+    {
+      "fingerprint": "fp_cs0103_name_missing",
+      "count": 2,
+      "groupReason": "same-fingerprint",
+      "primaryDiagnosticId": "diag_01HXYZ012"
+    }
+  ],
+  "diagnostics": [],
+  "matchedRules": [],
+  "narrative": {
+    "summary": "The build is failing because repeated missing-symbol errors point to one unresolved identifier pattern.",
+    "groupSummaries": [
+      "Missing symbol issues are clustered into one repeated fingerprint group.",
+      "The first group should be fixed before chasing downstream repeats."
+    ],
+    "recommendedNextSteps": [
+      "Fix the first unresolved identifier and rebuild.",
+      "Check for a typo or missing declaration in the earliest failing file."
+    ],
+    "source": "ai",
+    "provider": "ollama",
+    "model": "qwen3:8b",
+    "status": "completed",
+    "fallbackUsed": false
+  },
+  "processing": {
+    "usedAi": true,
+    "durationMs": 71,
+    "parser": "dotnet-diagnostic-parser-v1",
+    "ai": {
+      "requested": true,
+      "provider": "ollama",
+      "model": "qwen3:8b",
+      "status": "completed",
+      "fallbackUsed": false,
+      "feature": "root-cause-narrative"
+    },
+    "aiTasks": [
+      {
+        "requested": true,
+        "provider": "ollama",
+        "model": "qwen3:8b",
+        "status": "completed",
+        "fallbackUsed": false,
+        "feature": "root-cause-narrative"
+      }
+    ]
+  }
 }
 ```

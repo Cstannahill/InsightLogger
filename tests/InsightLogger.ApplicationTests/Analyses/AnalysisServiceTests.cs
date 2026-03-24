@@ -37,6 +37,7 @@ public sealed class AnalysisServiceTests
             detector,
             parserCoordinator,
             new DiagnosticGroupingService(),
+            new AnalysisNarrativeFactory(),
             new RootCauseRankingService(),
             ruleMatchingService);
     }
@@ -62,6 +63,8 @@ public sealed class AnalysisServiceTests
         var candidate = result.RootCauseCandidates[0];
         candidate.Title.Should().Be("Unknown symbol in current context");
         candidate.Explanation.Should().Contain("cannot resolve");
+        candidate.LikelyCauses.Should().Contain("Typo in variable or member name");
+        candidate.SuggestedFixes.Should().NotBeEmpty();
         candidate.Signals.Should().Contain("diagnostic-code:CS0103");
     }
 
@@ -82,6 +85,9 @@ Program.cs(15,9): error CS0103: The name 'servicez' does not exist in the curren
         result.Groups[0].Count.Should().Be(2);
         result.RootCauseCandidates.Should().ContainSingle();
         result.RootCauseCandidates[0].Signals.Should().Contain("group-count:2");
+        result.Narrative.Should().NotBeNull();
+        result.Narrative!.Source.Should().Be("deterministic");
+        result.Narrative.GroupSummaries.Should().NotBeEmpty();
     }
 
 
@@ -193,6 +199,7 @@ npm ERR!   npm run
             detector,
             parserCoordinator,
             new DiagnosticGroupingService(),
+            new AnalysisNarrativeFactory(),
             new RootCauseRankingService(),
             ruleMatchingService);
 

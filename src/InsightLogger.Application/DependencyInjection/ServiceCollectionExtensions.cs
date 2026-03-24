@@ -12,6 +12,7 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddInsightLoggerApplication(this IServiceCollection services)
     {
         services.AddScoped<DiagnosticGroupingService>();
+        services.AddScoped<AnalysisNarrativeFactory>();
         services.AddScoped<RootCauseRankingService>();
         services.AddScoped<RuleMatchingService>();
         services.AddScoped<IAnalysisService, AnalysisService>();

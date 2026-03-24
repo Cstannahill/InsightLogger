@@ -88,7 +88,7 @@ Use a consistent error response contract for validation, application, and provid
 ## `POST /analyze/build-log`
 
 ### Purpose
-Analyze a full build or tool log and return structured diagnostics, groups, likely root causes, and optional enrichment.
+Analyze a full build or tool log and return structured diagnostics, groups, likely root causes, optional grouped narrative output, and optional enrichment.
 
 ### Request body
 
@@ -109,6 +109,7 @@ Program.cs(14,9): error CS0103: The name 'builderz' does not exist in the curren
   "options": {
     "persist": true,
     "useAiEnrichment": false,
+    "useAiRootCauseNarrative": false,
     "includeRawDiagnostics": true,
     "includeGroups": true,
     "includeProcessingMetadata": true
@@ -127,7 +128,9 @@ Program.cs(14,9): error CS0103: The name 'builderz' does not exist in the curren
 | `branch` | string | No | Optional branch name |
 | `commitSha` | string | No | Optional commit SHA |
 | `environment` | object | No | Optional environment metadata |
-| `options` | object | No | Controls persistence and output detail |
+| `options` | object | No | Controls persistence and output detail, including separate AI task toggles |
+
+`options.useAiEnrichment` targets primary-candidate explanation enrichment. `options.useAiRootCauseNarrative` targets grouped multi-diagnostic build-log narrative generation. They may be requested independently or together.
 
 ### Successful response
 
@@ -155,6 +158,11 @@ Status:
         "diagnostic-code:CS0103",
         "category:missing-symbol",
         "ranked-primary:true"
+      ],
+      "likelyCauses": [
+        "Typo in variable or member name",
+        "Missing declaration",
+        "Wrong scope or missing using/reference"
       ],
       "suggestedFixes": [
         "Check for a spelling mismatch between declaration and usage.",
@@ -261,8 +269,8 @@ Status:
   "explanation": "A symbol is being referenced that the compiler cannot resolve in the current scope.",
   "likelyCauses": [
     "Typo in variable or member name",
-    "Symbol declared in a different scope",
-    "Missing using, reference, or declaration"
+    "Missing declaration",
+    "Wrong scope or missing using/reference"
   ],
   "suggestedFixes": [
     "Check for a spelling mismatch.",
@@ -746,11 +754,13 @@ Status:
 Responses should balance immediate usability and structured downstream consumption.
 
 ### AI provenance
-If AI enrichment is used, the response should indicate:
-- whether AI was used
-- provider name
-- model name
+If AI is used, the response should indicate:
+- whether any AI task was used
+- per-task provider and model details
 - whether fallback occurred
+- which feature each AI task targeted
+
+`processing.ai` remains a convenience summary for single-task cases. `processing.aiTasks` is the authoritative list when multiple AI tasks are requested in one analysis.
 
 ### Partial success
 The API should prefer partial structured success over total failure when deterministic analysis can still produce useful output.

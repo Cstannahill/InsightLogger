@@ -126,5 +126,6 @@ The implemented roadmap currently includes the slices through:
 
 - `ScopedRuleSlice`
 - `AIHealthAndProviderMetadataSlice`
+- `AIExplanationEnrichmentSlice`
 
 Detailed implementation log is maintained in [docs/README.md](docs/README.md).

@@ -59,6 +59,35 @@ public sealed class AnalyzeCompilerErrorEndpointTests : IClassFixture<ApiTestWeb
         payload.Processing.Should().NotBeNull();
     }
 
+
+    [Fact]
+    public async Task PostCompilerError_ShouldReturnDeterministicResultWithWarning_WhenAiIsRequestedButDisabled()
+    {
+        using var client = _factory.CreateClient();
+
+        var request = new AnalyzeCompilerErrorRequest(
+            Tool: "dotnet",
+            Content: "Program.cs(14,9): error CS0103: The name 'builderz' does not exist in the current context",
+            Options: new AnalyzeRequestOptionsContract(
+                Persist: false,
+                UseAiEnrichment: true,
+                IncludeRawDiagnostics: false,
+                IncludeGroups: false,
+                IncludeProcessingMetadata: true));
+
+        using var response = await client.PostAsJsonAsync("/analyze/compiler-error", request);
+        var payload = await response.Content.ReadFromJsonAsync<AnalyzeCompilerErrorResponse>();
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        payload.Should().NotBeNull();
+        payload!.Processing.Should().NotBeNull();
+        payload.Processing!.UsedAi.Should().BeFalse();
+        payload.Processing.Ai.Should().NotBeNull();
+        payload.Processing.Ai!.Requested.Should().BeTrue();
+        payload.Processing.Ai.Status.Should().Be("disabled");
+        payload.Warnings.Should().ContainSingle();
+    }
+
     [Fact]
     public async Task PostCompilerError_ShouldReturnValidationError_ForUnsupportedTool()
     {
@@ -77,4 +106,5 @@ public sealed class AnalyzeCompilerErrorEndpointTests : IClassFixture<ApiTestWeb
         payload.Error.Details.Should().Contain(d => d.Field == "tool");
     }
 }
+
 

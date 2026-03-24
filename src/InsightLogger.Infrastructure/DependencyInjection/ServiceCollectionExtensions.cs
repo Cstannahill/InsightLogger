@@ -54,6 +54,7 @@ public static class ServiceCollectionExtensions
             options.UseSqlite(persistenceOptions.ConnectionString);
         });
 
+        services.AddHttpClient();
         services.AddScoped<AnalysisPersistenceService>();
         services.AddScoped<IAnalysisPersistenceRepository, EfCoreAnalysisPersistenceRepository>();
         services.AddScoped<IErrorPatternRepository, EfCoreErrorPatternRepository>();
@@ -63,6 +64,8 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IRuleMatcher, DeterministicRuleMatcher>();
         services.AddSingleton<IAiProviderCatalog, ConfiguredAiProviderCatalog>();
         services.AddSingleton<IAiProviderHealthService, ConfiguredAiProviderHealthService>();
+        services.AddScoped<IAiExplanationEnricher, ConfiguredAiExplanationEnricher>();
+        services.AddScoped<IAiRootCauseNarrativeGenerator, ConfiguredAiRootCauseNarrativeGenerator>();
 
         return services;
     }
@@ -81,6 +84,7 @@ public static class ServiceCollectionExtensions
 
         EnsureSqliteDirectoryExists(connectionString);
 
+        services.AddHttpClient();
         services.AddDbContext<InsightLoggerDbContext>(options => options.UseSqlite(connectionString));
         services.AddScoped<AnalysisPersistenceService>();
         services.AddScoped<IAnalysisPersistenceRepository, EfCoreAnalysisPersistenceRepository>();
@@ -91,6 +95,8 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IRuleMatcher, DeterministicRuleMatcher>();
         services.AddSingleton<IAiProviderCatalog, ConfiguredAiProviderCatalog>();
         services.AddSingleton<IAiProviderHealthService, ConfiguredAiProviderHealthService>();
+        services.AddScoped<IAiExplanationEnricher, ConfiguredAiExplanationEnricher>();
+        services.AddScoped<IAiRootCauseNarrativeGenerator, ConfiguredAiRootCauseNarrativeGenerator>();
 
         return services;
     }

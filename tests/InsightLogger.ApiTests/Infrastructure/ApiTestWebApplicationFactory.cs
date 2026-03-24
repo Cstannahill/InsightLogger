@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace InsightLogger.ApiTests.Infrastructure;
 
@@ -17,6 +18,12 @@ public sealed class ApiTestWebApplicationFactory : WebApplicationFactory<Program
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        builder.ConfigureLogging(logging =>
+        {
+            logging.AddFilter("InsightLogger.Api.Middleware.ApiExceptionHandlingMiddleware", LogLevel.None);
+            logging.AddFilter("Microsoft.EntityFrameworkCore.Database.Command", LogLevel.Warning);
+        });
+
         builder.ConfigureAppConfiguration((_, configBuilder) =>
         {
             configBuilder.AddInMemoryCollection(new Dictionary<string, string?>
