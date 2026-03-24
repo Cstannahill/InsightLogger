@@ -1,0 +1,8 @@
+Build started...
+Program.cs(14,9): error CS0103: The name 'builderz' does not exist in the current context
+Models/User.cs(8,19): warning CS8618: Non-nullable property 'Name' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable.
+error MSB3021: Unable to copy file "obj\Debug\net9.0\apphost.exe" to "bin\Debug\net9.0\MyApp.exe". The process cannot access the file because it is being used by another process.
+Build FAILED.
+    1 Warning(s)
+    2 Error(s)
+Time Elapsed 00:00:01.42

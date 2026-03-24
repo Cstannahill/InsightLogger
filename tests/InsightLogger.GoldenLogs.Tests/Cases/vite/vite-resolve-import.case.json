@@ -1,0 +1,30 @@
+{
+  "id": "vite.resolve-import",
+  "sampleLogPath": "samples/logs/vite/vite-resolve-import.log",
+  "inputType": "build-log",
+  "toolHint": "vite",
+  "expect": {
+    "toolDetected": "vite",
+    "summary": {
+      "totalDiagnostics": 1,
+      "groupCount": 1,
+      "primaryIssueCount": 1,
+      "errorCount": 1,
+      "warningCount": 0
+    },
+    "primaryFingerprints": [
+      "fp_bc4808eddd0bfe23"
+    ],
+    "requiredCategories": [
+      "dependency"
+    ],
+    "requiredDiagnosticCodes": [
+      "VITE_RESOLVE_IMPORT"
+    ],
+    "requiredMessageFragments": [
+      "resolve import"
+    ],
+    "parserName": "vite-diagnostic-parser-v1",
+    "maxUnparsedSegments": 0
+  }
+}

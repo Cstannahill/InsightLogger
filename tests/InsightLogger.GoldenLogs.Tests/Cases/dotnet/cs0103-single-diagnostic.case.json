@@ -1,0 +1,31 @@
+{
+  "id": "dotnet.cs0103-single-diagnostic",
+  "sampleLogPath": "samples/logs/dotnet/cs0103-single-diagnostic.log",
+  "inputType": "compiler-error",
+  "toolHint": "dotnet",
+  "expect": {
+    "toolDetected": "dotnet",
+    "summary": {
+      "totalDiagnostics": 1,
+      "groupCount": 1,
+      "primaryIssueCount": 1,
+      "errorCount": 1,
+      "warningCount": 0
+    },
+    "primaryFingerprints": [
+      "fp_cs0103_name_missing"
+    ],
+    "requiredCategories": [
+      "missing-symbol"
+    ],
+    "requiredDiagnosticCodes": [
+      "CS0103"
+    ],
+    "requiredMessageFragments": [
+      "does not exist in the current context"
+    ],
+    "parserName": "dotnet-diagnostic-parser-v1",
+    "maxUnparsedSegments": 0
+  }
+}
+

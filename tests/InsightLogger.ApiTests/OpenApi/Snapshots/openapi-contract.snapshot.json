@@ -1,0 +1,35 @@
+{
+  "paths": {
+    "/analyze/build-log": {
+      "requestSchema": "AnalyzeBuildLogRequest",
+      "successSchema": "AnalyzeBuildLogResponse",
+      "errorSchema": "ApiErrorResponse",
+      "responseCodes": [
+        "200",
+        "400",
+        "413",
+        "415",
+        "500"
+      ]
+    },
+    "/analyze/compiler-error": {
+      "requestSchema": "AnalyzeCompilerErrorRequest",
+      "successSchema": "AnalyzeCompilerErrorResponse",
+      "errorSchema": "ApiErrorResponse",
+      "responseCodes": [
+        "200",
+        "400",
+        "413",
+        "415",
+        "500"
+      ]
+    }
+  },
+  "schemas": [
+    "AnalyzeBuildLogRequest",
+    "AnalyzeBuildLogResponse",
+    "AnalyzeCompilerErrorRequest",
+    "AnalyzeCompilerErrorResponse",
+    "ApiErrorResponse"
+  ]
+}

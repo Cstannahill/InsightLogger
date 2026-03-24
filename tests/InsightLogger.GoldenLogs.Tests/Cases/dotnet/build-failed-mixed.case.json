@@ -1,0 +1,30 @@
+{
+  "id": "dotnet.build-failed-mixed",
+  "sampleLogPath": "samples/logs/dotnet/build-failed-mixed.log",
+  "inputType": "build-log",
+  "toolHint": "dotnet",
+  "expect": {
+    "toolDetected": "dotnet",
+    "summary": {
+      "totalDiagnostics": 3,
+      "groupCount": 3,
+      "primaryIssueCount": 3,
+      "errorCount": 2,
+      "warningCount": 1
+    },
+    "primaryFingerprints": [
+      "fp_cs0103_name_missing"
+    ],
+    "requiredCategories": [
+      "missing-symbol"
+    ],
+    "requiredDiagnosticCodes": [
+      "CS0103"
+    ],
+    "requiredMessageFragments": [
+      "does not exist in the current context"
+    ],
+    "parserName": "dotnet-diagnostic-parser-v1"
+  }
+}
+

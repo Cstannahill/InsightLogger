@@ -1,0 +1,30 @@
+{
+  "id": "tsc.ts2304-single-diagnostic",
+  "sampleLogPath": "samples/logs/tsc/ts2304-single-diagnostic.log",
+  "inputType": "compiler-error",
+  "toolHint": "typescript",
+  "expect": {
+    "toolDetected": "typescript",
+    "summary": {
+      "totalDiagnostics": 1,
+      "groupCount": 1,
+      "primaryIssueCount": 1,
+      "errorCount": 1,
+      "warningCount": 0
+    },
+    "primaryFingerprints": [
+      "fp_ts2304_name_missing"
+    ],
+    "requiredCategories": [
+      "missing-symbol"
+    ],
+    "requiredDiagnosticCodes": [
+      "TS2304"
+    ],
+    "requiredMessageFragments": [
+      "Cannot find name"
+    ],
+    "parserName": "typescript-diagnostic-parser-v1",
+    "maxUnparsedSegments": 0
+  }
+}

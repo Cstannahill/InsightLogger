@@ -1,0 +1,5 @@
+npm ERR! Missing script: "build"
+npm ERR!
+npm ERR! To see a list of scripts, run:
+npm ERR!   npm run
+npm ERR! A complete log of this run can be found in: C:\Users\Christian\AppData\Local\npm-cache\_logs\2026-03-24T00_00_00_000Z-debug-0.log

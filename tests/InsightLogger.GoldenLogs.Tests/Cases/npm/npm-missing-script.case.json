@@ -1,0 +1,30 @@
+{
+  "id": "npm.missing-script",
+  "sampleLogPath": "samples/logs/npm/npm-missing-script.log",
+  "inputType": "build-log",
+  "toolHint": "npm",
+  "expect": {
+    "toolDetected": "npm",
+    "summary": {
+      "totalDiagnostics": 1,
+      "groupCount": 1,
+      "primaryIssueCount": 1,
+      "errorCount": 1,
+      "warningCount": 0
+    },
+    "primaryFingerprints": [
+      "fp_0c754d45b40bbd18"
+    ],
+    "requiredCategories": [
+      "configuration"
+    ],
+    "requiredDiagnosticCodes": [
+      "NPM_MISSING_SCRIPT"
+    ],
+    "requiredMessageFragments": [
+      "Missing script"
+    ],
+    "parserName": "npm-diagnostic-parser-v1",
+    "maxUnparsedSegments": 0
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "id": "python.nameerror-traceback",
+  "sampleLogPath": "samples/logs/python/nameerror-traceback.log",
+  "inputType": "build-log",
+  "toolHint": "python",
+  "expect": {
+    "toolDetected": "python",
+    "summary": {
+      "totalDiagnostics": 1,
+      "groupCount": 1,
+      "primaryIssueCount": 1,
+      "errorCount": 1,
+      "warningCount": 0
+    },
+    "primaryFingerprints": [
+      "fp_python_nameerror_not_defined"
+    ],
+    "requiredCategories": [
+      "missing-symbol"
+    ],
+    "requiredDiagnosticCodes": [
+      "NameError"
+    ],
+    "requiredMessageFragments": [
+      "not defined"
+    ],
+    "parserName": "python-traceback-parser-v1",
+    "maxUnparsedSegments": 0
+  }
+}

@@ -1,0 +1,27 @@
+namespace InsightLogger.Application.Rules.DTOs;
+
+public sealed record RuleDetailsDto(
+    string Id,
+    string Name,
+    string? Description,
+    int Priority,
+    bool IsEnabled,
+    string? Tool,
+    string? Code,
+    string? Severity,
+    string? Category,
+    string? MessageRegex,
+    string? FilePathRegex,
+    string? Fingerprint,
+    string? Title,
+    string? Explanation,
+    IReadOnlyList<string> SuggestedFixes,
+    double ConfidenceAdjustment,
+    bool MarkAsPrimaryCause,
+    IReadOnlyList<string> Tags,
+    int MatchCount,
+    DateTimeOffset? LastMatchedAtUtc,
+    DateTimeOffset CreatedAtUtc,
+    DateTimeOffset UpdatedAtUtc,
+    string? ProjectName = null,
+    string? Repository = null);
