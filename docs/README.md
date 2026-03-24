@@ -4,7 +4,7 @@ Project documentation for InsightLogger.
 
 ## Current implementation status
 
-The codebase now includes nineteen implemented scaffolding slices:
+The codebase now includes twenty-three implemented scaffolding slices:
 
 1. InitialSlice
 - Core domain models for diagnostics and analyses
@@ -138,10 +138,28 @@ The codebase now includes nineteen implemented scaffolding slices:
 - Added application/API/OpenAPI/infrastructure tests covering deterministic narrative projection and AI narrative success/failure fallback behavior.
 
 19. AINarrativeToggleAndTaskProvenanceSlice
-- Added a dedicated `useAiRootCauseNarrative` request option so narrative generation can be requested independently from `useAiEnrichment`.
-- Updated analysis orchestration to run explanation enrichment and narrative generation as separate optional AI tasks within the same request.
-- Extended processing metadata/contracts/mappers/OpenAPI with `aiTasks` for explicit per-task AI provenance while retaining `ai` as a single-task convenience summary.
-- Added API/OpenAPI/application test updates and docs examples for separate toggles, combined-task requests, and per-task provenance responses.
+- Added dedicated `useAiRootCauseNarrative` request toggle so grouped narrative generation is controlled independently from `useAiEnrichment`.
+- Added per-request AI task provenance (`aiTasks`) so explanation enrichment and narrative generation status are tracked separately.
+- Updated contracts/mapping/OpenAPI surfaces and API/application tests for independent and combined AI-task behavior.
+
+20. PersistNarrativeHistorySlice
+- Persisted grouped narrative output and related metadata with analyses for historical lookup.
+- Added narrative history retrieval flows for recent narratives and analysis-id detail read paths.
+- Added application/API/integration coverage for narrative persistence and retrieval behavior.
+
+21. PersistedAnalysisRetrievalSlice
+- Added full persisted analysis retrieval endpoint `GET /analyses/{analysisId}` with complete analysis replay payload.
+- Added snapshot-backed persisted analysis storage (`AnalysisSnapshotJson`) plus normalized-row fallback reconstruction for older analyses.
+- Added application query/repository flow, contracts/mapping/OpenAPI updates, migration (`20260324084500_AddAnalysisResultSnapshot`), and API/infrastructure/integration test coverage.
+
+22. HistoricalNarrativeSearchSlice
+- Extended `GET /analyses/narratives` with optional `text` search over persisted narrative summary, grouped summaries, recommended next steps, narrative reason, project/repository, and stored provider/model metadata.
+- Added deterministic search match metadata (`matchedFields`, `matchSnippet`) for narrative-history result previews.
+- Added API/OpenAPI/infrastructure test coverage for narrative search filtering and ranking behavior.
+
+23. FrontendIntegrationReferenceSpecSlice
+- Added frontend integration/reference documentation for a separate React + TypeScript UI workspace.
+- Added `docs/frontend/react-typescript-integration.md` covering route design, endpoint/query mapping, typed client-shape guidance, UI state expectations, and component/data-boundary recommendations for analysis/history/detail views.
 
 
 ## API description endpoint policy
@@ -228,7 +246,23 @@ Next planned increments remain:
 - Fixed `RuleServiceRuleTestingTests` compile regression after scoped-rule merge by restoring `InsightLogger.Application.Analyses.Services` import and updating assertions from removed `RuleTestResultDto.Matched` to `Matches` collection-based checks.
 - Updated scoped-rule analysis test expectations to allow both diagnostic and group rule-match targets while still requiring scoped-condition matches (`projectName`, `repository`) on all emitted matches.
 - Integrated AIHealthAndProviderMetadataSlice end-to-end: registered AI metadata query + provider catalog/health services in DI, mapped new health/provider endpoints, added AI contracts/mappers/configuration, and included corresponding API/OpenAPI/application/infrastructure test coverage.
-- Added API test-host logging filters to reduce expected test noise by suppressing `InsightLogger.Api.Middleware.ApiExceptionHandlingMiddleware` error logs and lowering `Microsoft.EntityFrameworkCore.Database.Command` to warning level during API test runs.
-- Integrated AINarrativeToggleAndTaskProvenanceSlice: split AI narrative execution behind `useAiRootCauseNarrative`, enabled combined AI task execution in one analysis request, and projected per-task provenance via `processing.aiTasks`.
-- Reduced noisy EF SQL command logs by setting `Logging:LogLevel:Microsoft.EntityFrameworkCore.Database.Command` to `Warning` in API appsettings defaults (including development), improving test output readability.
-- Fixed post-slice test compile regressions by restoring missing test imports for `IRuleRepository` usage and enabling `IWebHostBuilder.ConfigureLogging` extension resolution in API endpoint tests.
+
+
+
+- Persisted grouped build-log narratives on analyses, including narrative source metadata and project/repository context for historical lookup.
+- Added historical narrative query endpoints for recent persisted narratives and detail-by-analysis-id retrieval.
+
+- Added full persisted analysis retrieval by analysis id (`GET /analyses/{analysisId}`), backed by an internal analysis snapshot for complete replay of stored diagnostics/groups/candidates/matches/processing and a normalized-row fallback for older analyses.
+- Fixed SQLite narrative-history retrieval stability by moving `CreatedAtUtc` ordering for `EfCoreAnalysisNarrativeReadRepository.GetRecentAsync` to client-side LINQ after materialization (SQLite does not support `DateTimeOffset` `ORDER BY` translation).
+- Fixed malformed JSON string literals in `EfCoreAnalysisNarrativeReadRepositoryTests` seed data so infrastructure tests compile correctly after historical narrative search slice merge.
+- Fixed CS8122 test compile regressions by replacing C# pattern-matching (`is ... or ...`) predicates in narrative-search assertions with expression-tree-safe equality checks.
+
+## Frontend integration docs
+
+- `docs/frontend/react-typescript-integration.md`
+  - React + TypeScript client integration reference
+  - recommended routes/page flows
+  - query shapes and URL-state guidance
+  - UI state recommendations
+  - component/data-boundary guidance for analysis, history, narrative, and detail views
+- Refreshed root `README.md` to a current public-repo format aligned with persisted-analysis/narrative APIs, AI metadata/enrichment capabilities, and frontend integration reference documentation.

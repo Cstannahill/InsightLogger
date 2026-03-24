@@ -24,9 +24,15 @@ public sealed class OpenApiDocumentTests
 
         Assert.True(paths.TryGetProperty("/analyze/build-log", out var buildLogPath));
         Assert.True(paths.TryGetProperty("/analyze/compiler-error", out var compilerErrorPath));
+        Assert.True(paths.TryGetProperty("/analyses/narratives", out var narrativeHistoryPath));
+        Assert.True(paths.TryGetProperty("/analyses/{analysisId}", out var analysisDetailPath));
+        Assert.True(paths.TryGetProperty("/analyses/{analysisId}/narrative", out var narrativeDetailPath));
 
         AssertOperation(buildLogPath.GetProperty("post"), "AnalyzeBuildLogRequest", "AnalyzeBuildLogResponse");
         AssertOperation(compilerErrorPath.GetProperty("post"), "AnalyzeCompilerErrorRequest", "AnalyzeCompilerErrorResponse");
+        AssertGetOperation(narrativeHistoryPath.GetProperty("get"), "GetAnalysisNarrativesResponse", includeNotFound: false);
+        AssertGetOperation(analysisDetailPath.GetProperty("get"), "GetAnalysisResponse", includeNotFound: true);
+        AssertGetOperation(narrativeDetailPath.GetProperty("get"), "GetAnalysisNarrativeResponse", includeNotFound: true);
     }
 
     private static void AssertOperation(JsonElement operation, string requestSchemaName, string successSchemaName)
@@ -66,6 +72,26 @@ public sealed class OpenApiDocumentTests
             .GetString();
 
         Assert.EndsWith("/ApiErrorResponse", errorSchemaRef);
+    }
+
+    private static void AssertGetOperation(JsonElement operation, string successSchemaName, bool includeNotFound)
+    {
+        var responses = operation.GetProperty("responses");
+        Assert.True(responses.TryGetProperty("200", out var okResponse));
+        Assert.True(responses.TryGetProperty("500", out _));
+        if (includeNotFound)
+        {
+            Assert.True(responses.TryGetProperty("404", out _));
+        }
+
+        var okSchemaRef = okResponse
+            .GetProperty("content")
+            .GetProperty("application/json")
+            .GetProperty("schema")
+            .GetProperty("$ref")
+            .GetString();
+
+        Assert.EndsWith("/" + successSchemaName, okSchemaRef);
     }
 }
 

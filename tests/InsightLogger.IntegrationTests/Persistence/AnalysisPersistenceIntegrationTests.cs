@@ -53,6 +53,7 @@ public sealed class AnalysisPersistenceIntegrationTests : IDisposable
         var analysis = await dbContext.Analyses.SingleAsync();
         analysis.RawContentHash.Should().NotBeNullOrWhiteSpace();
         analysis.RawContent.Should().BeNull();
+        analysis.AnalysisSnapshotJson.Should().NotBeNullOrWhiteSpace();
     }
 
     [Fact]
@@ -70,6 +71,11 @@ public sealed class AnalysisPersistenceIntegrationTests : IDisposable
         var result = await analysisService.AnalyzeAsync(new AnalyzeInputCommand(
             Content: content,
             InputType: InputType.BuildLog,
+            Context: new Dictionary<string, string>
+            {
+                ["projectName"] = "InsightLogger.Api",
+                ["repository"] = "InsightLogger"
+            },
             Persist: true));
 
         result.Diagnostics.Should().NotBeEmpty();
@@ -79,6 +85,12 @@ public sealed class AnalysisPersistenceIntegrationTests : IDisposable
         (await dbContext.DiagnosticGroups.CountAsync()).Should().Be(result.Groups.Count);
         (await dbContext.PatternOccurrences.CountAsync()).Should().BeGreaterThan(0);
         (await dbContext.ErrorPatterns.CountAsync()).Should().BeGreaterThan(0);
+
+        var analysis = await dbContext.Analyses.SingleAsync();
+        analysis.NarrativeSummary.Should().NotBeNullOrWhiteSpace();
+        analysis.ProjectName.Should().Be("InsightLogger.Api");
+        analysis.Repository.Should().Be("InsightLogger");
+        analysis.AnalysisSnapshotJson.Should().NotBeNullOrWhiteSpace();
     }
 
     private ServiceProvider BuildServiceProvider()

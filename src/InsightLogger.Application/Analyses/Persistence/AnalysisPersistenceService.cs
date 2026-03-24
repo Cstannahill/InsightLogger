@@ -7,9 +7,11 @@ using System.Threading;
 using System.Threading.Tasks;
 using InsightLogger.Application.Abstractions.Persistence;
 using InsightLogger.Application.Analyses.Commands;
+using InsightLogger.Application.Analyses.DTOs;
 using InsightLogger.Application.Rules.DTOs;
 using InsightLogger.Domain.Analyses;
 using InsightLogger.Domain.Diagnostics;
+using InsightLogger.Domain.Rules;
 
 namespace InsightLogger.Application.Analyses.Persistence;
 
@@ -40,8 +42,11 @@ public sealed class AnalysisPersistenceService
         IReadOnlyList<DiagnosticRecord> diagnostics,
         IReadOnlyList<DiagnosticGroup> groups,
         IReadOnlyList<RootCauseCandidate> rootCauseCandidates,
-        IReadOnlyList<RuleApplicationResult> matchedRules,
+        IReadOnlyList<RuleMatch> matchedRules,
+        AnalysisNarrative? narrative,
+        IReadOnlyList<RuleApplicationResult> matchedRuleApplications,
         ProcessingMetadata processing,
+        IReadOnlyList<string> warnings,
         CancellationToken cancellationToken = default)
     {
         if (!command.Persist)
@@ -59,14 +64,17 @@ public sealed class AnalysisPersistenceService
                 diagnostics,
                 groups,
                 rootCauseCandidates,
-                processing);
+                matchedRules,
+                narrative,
+                processing,
+                warnings);
 
             await _unitOfWork.ExecuteInTransactionAsync(async ct =>
             {
                 await _analysisPersistenceRepository.SaveAsync(request, ct);
                 await _errorPatternRepository.UpsertFromAnalysisAsync(request, ct);
                 await _ruleRepository.RecordMatchesAsync(
-                    matchedRules.Select(static match => match.Rule.Id).ToArray(),
+                    matchedRuleApplications.Select(static match => match.Rule.Id).ToArray(),
                     request.CreatedAtUtc,
                     ct);
             }, cancellationToken);
@@ -87,7 +95,10 @@ public sealed class AnalysisPersistenceService
         IReadOnlyList<DiagnosticRecord> diagnostics,
         IReadOnlyList<DiagnosticGroup> groups,
         IReadOnlyList<RootCauseCandidate> rootCauseCandidates,
-        ProcessingMetadata processing)
+        IReadOnlyList<RuleMatch> matchedRules,
+        AnalysisNarrative? narrative,
+        ProcessingMetadata processing,
+        IReadOnlyList<string> warnings)
     {
         var createdAtUtc = DateTimeOffset.UtcNow;
         return new AnalysisPersistenceRequest(
@@ -98,11 +109,48 @@ public sealed class AnalysisPersistenceService
             Diagnostics: diagnostics,
             Groups: groups,
             RootCauseCandidates: rootCauseCandidates,
+            MatchedRules: matchedRules,
+            Narrative: narrative,
             Processing: processing,
+            Warnings: warnings,
             Context: command.Context,
+            ProjectName: TryGetContextValue(command.Context, "projectName"),
+            Repository: TryGetContextValue(command.Context, "repository"),
             RawContentHash: ComputeSha256(command.Content),
             RawContent: command.StoreRawContentWhenPersisting ? command.Content : null,
             CreatedAtUtc: createdAtUtc);
+    }
+
+    public static PersistedAnalysisDto BuildPersistedAnalysisDto(AnalysisPersistenceRequest request)
+        => new(
+            AnalysisId: request.AnalysisId,
+            InputType: request.InputType,
+            ToolDetected: request.ToolDetected,
+            CreatedAtUtc: request.CreatedAtUtc,
+            Summary: request.Summary,
+            RootCauseCandidates: request.RootCauseCandidates,
+            Groups: request.Groups,
+            Diagnostics: request.Diagnostics,
+            MatchedRules: request.MatchedRules,
+            Narrative: request.Narrative,
+            Processing: request.Processing,
+            Warnings: request.Warnings,
+            Context: request.Context,
+            ProjectName: request.ProjectName,
+            Repository: request.Repository,
+            RawContentHash: request.RawContentHash,
+            RawContent: request.RawContent);
+
+    private static string? TryGetContextValue(IReadOnlyDictionary<string, string>? context, string key)
+    {
+        if (context is null)
+        {
+            return null;
+        }
+
+        return context.TryGetValue(key, out var value) && !string.IsNullOrWhiteSpace(value)
+            ? value.Trim()
+            : null;
     }
 
     private static string ComputeSha256(string content)

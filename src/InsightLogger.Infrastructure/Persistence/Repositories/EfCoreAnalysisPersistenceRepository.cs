@@ -48,9 +48,21 @@ public sealed class EfCoreAnalysisPersistenceRepository : IAnalysisPersistenceRe
             ParseConfidence = request.Processing.ParseConfidence,
             UnparsedSegmentCount = request.Processing.UnparsedSegmentCount,
             Notes = request.Processing.Notes,
+            NarrativeSummary = request.Narrative?.Summary,
+            NarrativeGroupSummariesJson = SerializeList(request.Narrative?.GroupSummaries),
+            NarrativeRecommendedNextStepsJson = SerializeList(request.Narrative?.RecommendedNextSteps),
+            NarrativeSource = request.Narrative?.Source,
+            NarrativeProvider = request.Narrative?.Provider,
+            NarrativeModel = request.Narrative?.Model,
+            NarrativeStatus = request.Narrative?.Status,
+            NarrativeFallbackUsed = request.Narrative?.FallbackUsed ?? false,
+            NarrativeReason = request.Narrative?.Reason,
+            ProjectName = request.ProjectName,
+            Repository = request.Repository,
             RawContentHash = request.RawContentHash,
             RawContent = request.RawContent,
             ContextJson = request.Context is null ? null : JsonSerializer.Serialize(request.Context, JsonOptions),
+            AnalysisSnapshotJson = JsonSerializer.Serialize(AnalysisPersistenceService.BuildPersistedAnalysisDto(request), JsonOptions),
             CreatedAtUtc = request.CreatedAtUtc
         };
 
@@ -111,9 +123,12 @@ public sealed class EfCoreAnalysisPersistenceRepository : IAnalysisPersistenceRe
     }
 
     private static string? SerializeMetadata(IReadOnlyDictionary<string, string> metadata)
-    {
-        return metadata.Count == 0
+        => metadata.Count == 0
             ? null
             : JsonSerializer.Serialize(metadata, JsonOptions);
-    }
+
+    private static string? SerializeList(IReadOnlyList<string>? items)
+        => items is null || items.Count == 0
+            ? null
+            : JsonSerializer.Serialize(items, JsonOptions);
 }

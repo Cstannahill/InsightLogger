@@ -57,6 +57,8 @@ public static class ServiceCollectionExtensions
         services.AddHttpClient();
         services.AddScoped<AnalysisPersistenceService>();
         services.AddScoped<IAnalysisPersistenceRepository, EfCoreAnalysisPersistenceRepository>();
+        services.AddScoped<IAnalysisReadRepository, EfCoreAnalysisReadRepository>();
+        services.AddScoped<IAnalysisNarrativeReadRepository, EfCoreAnalysisNarrativeReadRepository>();
         services.AddScoped<IErrorPatternRepository, EfCoreErrorPatternRepository>();
         services.AddScoped<IErrorPatternReadRepository, EfCoreErrorPatternReadRepository>();
         services.AddScoped<IRuleRepository, EfCoreRuleRepository>();
@@ -88,6 +90,8 @@ public static class ServiceCollectionExtensions
         services.AddDbContext<InsightLoggerDbContext>(options => options.UseSqlite(connectionString));
         services.AddScoped<AnalysisPersistenceService>();
         services.AddScoped<IAnalysisPersistenceRepository, EfCoreAnalysisPersistenceRepository>();
+        services.AddScoped<IAnalysisReadRepository, EfCoreAnalysisReadRepository>();
+        services.AddScoped<IAnalysisNarrativeReadRepository, EfCoreAnalysisNarrativeReadRepository>();
         services.AddScoped<IErrorPatternRepository, EfCoreErrorPatternRepository>();
         services.AddScoped<IErrorPatternReadRepository, EfCoreErrorPatternReadRepository>();
         services.AddScoped<IRuleRepository, EfCoreRuleRepository>();

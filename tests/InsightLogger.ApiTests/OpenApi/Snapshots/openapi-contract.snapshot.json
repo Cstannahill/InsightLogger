@@ -23,6 +23,35 @@
         "415",
         "500"
       ]
+    },
+    "/analyses/narratives": {
+      "successSchema": "GetAnalysisNarrativesResponse",
+      "errorSchema": "ApiErrorResponse",
+      "responseCodes": [
+        "200",
+        "400",
+        "500"
+      ]
+    },
+    "/analyses/{analysisId}": {
+      "successSchema": "GetAnalysisResponse",
+      "errorSchema": "ApiErrorResponse",
+      "responseCodes": [
+        "200",
+        "400",
+        "404",
+        "500"
+      ]
+    },
+    "/analyses/{analysisId}/narrative": {
+      "successSchema": "GetAnalysisNarrativeResponse",
+      "errorSchema": "ApiErrorResponse",
+      "responseCodes": [
+        "200",
+        "400",
+        "404",
+        "500"
+      ]
     }
   },
   "schemas": [
@@ -30,6 +59,10 @@
     "AnalyzeBuildLogResponse",
     "AnalyzeCompilerErrorRequest",
     "AnalyzeCompilerErrorResponse",
+    "GetAnalysisNarrativesResponse",
+    "GetAnalysisResponse",
+    "GetAnalysisNarrativeResponse",
+    "AnalysisNarrativeHistoryItemContract",
     "ApiErrorResponse"
   ]
 }

@@ -1,41 +1,26 @@
 # InsightLogger
 
-InsightLogger is a developer-focused API that accepts raw build/compiler/runtime/tool output, normalizes it into structured diagnostics, identifies likely root causes, reduces noise, and returns actionable guidance.
+InsightLogger is a .NET 9 API for turning raw build/compiler/runtime/tool output into structured diagnostics, ranked root-cause candidates, and actionable remediation guidance.
 
-## Why this exists
+It is designed to be deterministic first, with optional AI enrichment layered on top.
 
-Build logs are noisy. InsightLogger helps answer:
+## Key capabilities
 
-- What actually failed?
-- Which diagnostics matter most?
-- What should I try next?
-- Is this a recurring issue?
+- Deterministic analysis pipeline
+- Tool detection and parser coordination
+- Diagnostic normalization, classification, fingerprinting, grouping, and ranking
+- Rule engine with create/list/get/update/enable APIs
+- Rule dry-run testing (`POST /rules/test`)
+- Scoped rules (`projectName`, `repository`)
+- Rule recurrence analytics (`matchCount`, `lastMatchedAtUtc`)
+- Pattern analytics (`GET /errors/{fingerprint}`, `GET /patterns/top`)
+- Persisted analysis retrieval (`GET /analyses/{analysisId}`)
+- Persisted narrative history and text search (`GET /analyses/narratives`)
+- Persisted narrative detail (`GET /analyses/{analysisId}/narrative`)
+- AI health/provider metadata APIs (`GET /health/ai`, `GET /providers/ai`)
+- Optional AI explanation enrichment and optional AI root-cause narrative generation
 
-## What it does today
-
-- Deterministic-first analysis pipeline:
-  - tool detection
-  - parser coordination
-  - normalization and classification
-  - fingerprinting
-  - dedupe/grouping
-  - root-cause ranking
-- Rule engine:
-  - create/update/list/enable rules
-  - dry-run rule testing (`POST /rules/test`)
-  - scoped rules (`projectName`, `repository`)
-  - rule recurrence analytics (`matchCount`, `lastMatchedAtUtc`)
-- Pattern analytics:
-  - lookup by fingerprint
-  - top recurring patterns
-- Health and AI metadata:
-  - overall health
-  - AI provider health
-  - AI provider capability catalog
-- Persistence with EF Core + SQLite migrations
-- Golden-log tests for deterministic behavior
-
-Supported input ecosystems in current parsers:
+Supported parser ecosystems:
 
 - .NET / Roslyn
 - TypeScript (`tsc`)
@@ -43,20 +28,35 @@ Supported input ecosystems in current parsers:
 - npm
 - Vite
 
-## API surface
+## API endpoints
 
-Core endpoints:
+Analysis:
 
 - `POST /analyze/build-log`
 - `POST /analyze/compiler-error`
+
+Persisted analysis and narratives:
+
+- `GET /analyses/narratives`
+- `GET /analyses/{analysisId}`
+- `GET /analyses/{analysisId}/narrative`
+
+Patterns:
+
 - `GET /errors/{fingerprint}`
 - `GET /patterns/top`
+
+Rules:
+
 - `POST /rules`
 - `GET /rules`
 - `GET /rules/{id}`
 - `PUT /rules/{id}`
 - `PATCH /rules/{id}/enabled`
 - `POST /rules/test`
+
+Health and provider metadata:
+
 - `GET /health`
 - `GET /health/ai`
 - `GET /providers/ai`
@@ -65,11 +65,9 @@ OpenAPI:
 
 - `GET /openapi/v1.json`
 
-See full endpoint details in [docs/api/endpoints.md](docs/api/endpoints.md).
-
 ## Quick start
 
-Prerequisites:
+Prerequisite:
 
 - .NET SDK 9
 
@@ -81,17 +79,18 @@ dotnet run --project src/InsightLogger.Api
 
 Then open:
 
-- Swagger UI: `http://localhost:5000/swagger` (or configured port)
+- Swagger UI: `http://localhost:5000/swagger`
 - OpenAPI JSON: `http://localhost:5000/openapi/v1.json`
 
-## Typical usage
+## Typical workflow
 
-1. Send a full build log to `POST /analyze/build-log`.
-2. Receive normalized diagnostics, groups, root-cause candidates, matched rules, and processing metadata.
-3. Use returned fingerprints with `GET /errors/{fingerprint}` to inspect recurrence history and related rules.
-4. Add project-specific guidance via rules, and validate rules with `POST /rules/test` before enabling them.
+1. Submit log content with `POST /analyze/build-log` (or `POST /analyze/compiler-error`).
+2. Inspect ranked candidates, grouped diagnostics, rules, and processing metadata.
+3. Persist analyses and query historical narratives via `GET /analyses/narratives`.
+4. Open complete replayable details via `GET /analyses/{analysisId}`.
+5. Use fingerprints in `GET /errors/{fingerprint}` to inspect recurrence and related rules.
 
-## Project structure
+## Repository structure
 
 ```text
 src/
@@ -111,21 +110,27 @@ docs/
 samples/logs/
 ```
 
-## Architecture and design docs
+## Documentation
 
-- System overview: [docs/architecture/system-overview.md](docs/architecture/system-overview.md)
-- Request pipeline: [docs/architecture/request-processing-pipeline.md](docs/architecture/request-processing-pipeline.md)
-- Module responsibilities: [docs/architecture/module-responsibilities.md](docs/architecture/module-responsibilities.md)
-- API contracts and examples:
-  - [docs/api/endpoints.md](docs/api/endpoints.md)
-  - [docs/api/request-response-examples.md](docs/api/request-response-examples.md)
+Architecture:
 
-## Current status
+- [System overview](docs/architecture/system-overview.md)
+- [Request processing pipeline](docs/architecture/request-processing-pipeline.md)
+- [Module responsibilities](docs/architecture/module-responsibilities.md)
 
-The implemented roadmap currently includes the slices through:
+API:
 
-- `ScopedRuleSlice`
-- `AIHealthAndProviderMetadataSlice`
-- `AIExplanationEnrichmentSlice`
+- [Endpoints reference](docs/api/endpoints.md)
+- [Request/response examples](docs/api/request-response-examples.md)
 
-Detailed implementation log is maintained in [docs/README.md](docs/README.md).
+Project status:
+
+- [Implementation log and slice status](docs/README.md)
+
+Frontend integration reference (separate workspace):
+
+- [React + TypeScript integration guide](docs/frontend/react-typescript-integration.md)
+
+## Status
+
+The roadmap implementation is currently integrated through `FrontendIntegrationReferenceSpecSlice` (23 slices). For detailed slice-by-slice history, see [docs/README.md](docs/README.md).

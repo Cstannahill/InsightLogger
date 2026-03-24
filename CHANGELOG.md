@@ -1,6 +1,8 @@
 ## Unreleased
 
 ### Added
+- Added `docs/frontend/react-typescript-integration.md`, a React + TypeScript frontend integration/reference spec covering route/page flows, endpoint/query mapping, typed query shapes, UI states, timeline rendering guidance, and recommended component/data boundaries for analyze/history/detail/AI status views.
+- Updated `docs/README.md` to index frontend integration guidance for the separate UI workspace.
 - Integrated `TypeScriptParserSlice`:
 - Deterministic TypeScript parsing support via `TypeScriptDiagnosticParser`, `TypeScriptDiagnosticClassifier`, and `TypeScriptDiagnosticNormalizer`.
 - TypeScript parser registration in infrastructure DI (`AddInsightLoggerInfrastructureParsing`).
@@ -49,6 +51,14 @@
 - Allowed build-log analysis to request primary-candidate AI enrichment and grouped narrative generation independently within the same request.
 - Extended processing metadata/contracts/OpenAPI with `aiTasks` so multi-task AI provenance is explicit instead of overloading a single AI status object.
 - Updated API/application tests and docs to cover separate AI toggles, combined-task requests, and per-task provenance projection.
+- Integrated `PersistedAnalysisRetrievalSlice`:
+- Added persisted full-analysis retrieval endpoint (`GET /analyses/{analysisId}`) backed by an internal stored analysis snapshot plus normalized-row fallback for older records.
+- Added full persisted-analysis contract/query/repository flow covering diagnostics, groups, root-cause candidates, matched rules, narrative, processing metadata, warnings, context, and raw-content metadata.
+- Added snapshot persistence migration (`20260324084500_AddAnalysisResultSnapshot`) and API/infrastructure/integration test coverage for snapshot-backed and legacy fallback retrieval.
+- Integrated `HistoricalNarrativeSearchSlice`:
+- Extended `GET /analyses/narratives` with optional `text` filtering for historical narrative search across persisted summary/group/next-step/reason/project/repository/provider/model fields.
+- Added deterministic search-result match metadata (`matchedFields`, `matchSnippet`) for frontend result previews and detail-page navigation.
+- Added API/OpenAPI/infrastructure test coverage and updated narrative history docs/examples for text-matching behavior.
 ### Fixed
 - Resolved `NpmDiagnosticParser` compile failure (`CS0136`) by renaming shadowed local variables in the missing-script parsing branch.
 - Resolved `RuleService` compile failure (`CS0246`) by restoring `InsightLogger.Application.Analyses.Services` import for `DiagnosticGroupingService` and `RootCauseRankingService`.
@@ -57,6 +67,5 @@
 - Preserved prior rule-persistence/recurrence fixes during scoped-rule integration by keeping `AnalysisService` persistence wired to `RuleEvaluationResult.Applications`, retaining SQLite-safe client-side ordering in related-rule context lookup, and persisting direct `RecordMatchesAsync` updates with `SaveChangesAsync`.
 - Resolved `RuleServiceRuleTestingTests` compile errors after scoped-rule integration by restoring analysis-service imports and replacing removed `RuleTestResultDto.Matched` assertions with `Matches`-based assertions.
 - Adjusted `AnalysisServiceRuleMatchingTests.AnalyzeAsync_Respects_Project_And_Repository_Scope_From_Context` assertions to accept both diagnostic and group `RuleMatch` targets while enforcing scoped-condition match metadata on each result.
-
 
 

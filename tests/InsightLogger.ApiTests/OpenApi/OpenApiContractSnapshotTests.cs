@@ -49,13 +49,20 @@ public sealed class OpenApiContractSnapshotTests : IClassFixture<WebApplicationF
             ["paths"] = new JsonObject
             {
                 ["/analyze/build-log"] = BuildOperationSnapshot(paths["/analyze/build-log"]!["post"]!.AsObject()),
-                ["/analyze/compiler-error"] = BuildOperationSnapshot(paths["/analyze/compiler-error"]!["post"]!.AsObject())
+                ["/analyze/compiler-error"] = BuildOperationSnapshot(paths["/analyze/compiler-error"]!["post"]!.AsObject()),
+                ["/analyses/narratives"] = BuildGetOperationSnapshot(paths["/analyses/narratives"]!["get"]!.AsObject()),
+                ["/analyses/{analysisId}"] = BuildGetOperationSnapshot(paths["/analyses/{analysisId}"]!["get"]!.AsObject()),
+                ["/analyses/{analysisId}/narrative"] = BuildGetOperationSnapshot(paths["/analyses/{analysisId}/narrative"]!["get"]!.AsObject())
             },
             ["schemas"] = new JsonArray(
                 "AnalyzeBuildLogRequest",
                 "AnalyzeBuildLogResponse",
                 "AnalyzeCompilerErrorRequest",
                 "AnalyzeCompilerErrorResponse",
+                "GetAnalysisNarrativesResponse",
+                "GetAnalysisResponse",
+                "GetAnalysisNarrativeResponse",
+                "AnalysisNarrativeHistoryItemContract",
                 "ApiErrorResponse")
         };
 
@@ -85,6 +92,31 @@ public sealed class OpenApiContractSnapshotTests : IClassFixture<WebApplicationF
         return new JsonObject
         {
             ["requestSchema"] = LastRefSegment(requestSchema),
+            ["successSchema"] = LastRefSegment(successSchema),
+            ["errorSchema"] = LastRefSegment(errorSchema),
+            ["responseCodes"] = responseCodes
+        };
+    }
+
+    private static JsonObject BuildGetOperationSnapshot(JsonObject operation)
+    {
+        var responses = operation["responses"]!.AsObject();
+        var responseCodes = new JsonArray();
+        foreach (var code in new[] { "200", "400", "404", "500" })
+        {
+            if (responses.ContainsKey(code))
+            {
+                responseCodes.Add(code);
+            }
+        }
+
+        var successSchema = responses["200"]!["content"]!["application/json"]!["schema"]!["$ref"]!.GetValue<string>();
+        var errorSchema = responses.ContainsKey("400")
+            ? responses["400"]!["content"]!["application/json"]!["schema"]!["$ref"]!.GetValue<string>()
+            : responses["404"]!["content"]!["application/json"]!["schema"]!["$ref"]!.GetValue<string>();
+
+        return new JsonObject
+        {
             ["successSchema"] = LastRefSegment(successSchema),
             ["errorSchema"] = LastRefSegment(errorSchema),
             ["responseCodes"] = responseCodes

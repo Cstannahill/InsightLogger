@@ -77,7 +77,6 @@ Use a consistent error response contract for validation, application, and provid
 - `GET /providers/ai`
 
 ### Future candidates
-- `GET /analyses/{id}`
 - `GET /analyses`
 - `POST /analyze/build-log/stream`
 
@@ -769,7 +768,6 @@ The API should prefer partial structured success over total failure when determi
 
 These are likely useful once the core API settles:
 
-- `GET /analyses/{id}` for retrieval of persisted analyses
 - `GET /analyses` for listing/searching prior analyses
 - `DELETE /analyses/{id}` for retention control
 - `POST /analyze/build-log/stream` for incremental analysis workflows
@@ -777,3 +775,37 @@ These are likely useful once the core API settles:
 ## Summary
 
 The InsightLogger API should stay small, explicit, and stable. The core endpoints are analysis, rules, patterns, and health/provider metadata. That is enough to support immediate local use while still leaving room for editor, UI, and CI integrations later.
+
+
+## `GET /analyses/narratives`
+
+Lists persisted grouped build-log narratives from prior analyses.
+
+### Query parameters
+
+- `limit` (optional, default `20`, max `100`)
+- `tool` (optional: `dotnet`, `typescript`, `npm`, `vite`, `python`, `generic`)
+- `source` (optional: `deterministic`, `ai`)
+- `projectName` (optional)
+- `repository` (optional)
+- `text` (optional, max `200` characters, case-insensitive contains match over narrative summary, grouped summaries, recommended next steps, narrative reason, project/repository, and stored AI provider/model metadata)
+
+### Notes
+
+Only persisted analyses that actually produced a grouped narrative are returned. Single-diagnostic analyses normally do not appear here.
+
+When `text` is supplied, results are filtered with deterministic SQLite `LIKE` matching and then re-ranked in memory so direct summary hits beat weaker metadata-only hits. Search responses also include `matchedFields` and a lightweight `matchSnippet` to help a UI render result previews.
+
+
+## `GET /analyses/{analysisId}`
+
+Returns the full persisted analysis for a prior run, including stored summary, diagnostics, groups, root-cause candidates, matched rules, narrative (if any), processing metadata, warnings, request context, and raw-content metadata.
+
+### Notes
+
+- New analyses are returned from a persisted internal analysis snapshot so the response can round-trip the original stored output shape.
+- Older analyses created before this slice still resolve through a normalized-row fallback, but fields that were never historically persisted (for example matched rules or warnings) may be empty on those records.
+
+## `GET /analyses/{analysisId}/narrative`
+
+Returns the persisted grouped diagnostic narrative for a prior analysis, including the stored narrative summary, group summaries, recommended next steps, source metadata, and persisted project/repository context.

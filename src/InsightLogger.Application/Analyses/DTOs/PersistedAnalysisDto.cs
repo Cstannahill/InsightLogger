@@ -4,16 +4,17 @@ using InsightLogger.Domain.Analyses;
 using InsightLogger.Domain.Diagnostics;
 using InsightLogger.Domain.Rules;
 
-namespace InsightLogger.Application.Analyses.Persistence;
+namespace InsightLogger.Application.Analyses.DTOs;
 
-public sealed record AnalysisPersistenceRequest(
+public sealed record PersistedAnalysisDto(
     string AnalysisId,
     InputType InputType,
     ToolKind ToolDetected,
+    DateTimeOffset CreatedAtUtc,
     AnalysisSummary Summary,
-    IReadOnlyList<DiagnosticRecord> Diagnostics,
-    IReadOnlyList<DiagnosticGroup> Groups,
     IReadOnlyList<RootCauseCandidate> RootCauseCandidates,
+    IReadOnlyList<DiagnosticGroup> Groups,
+    IReadOnlyList<DiagnosticRecord> Diagnostics,
     IReadOnlyList<RuleMatch> MatchedRules,
     AnalysisNarrative? Narrative,
     ProcessingMetadata Processing,
@@ -22,5 +23,4 @@ public sealed record AnalysisPersistenceRequest(
     string? ProjectName,
     string? Repository,
     string RawContentHash,
-    string? RawContent,
-    DateTimeOffset CreatedAtUtc);
+    string? RawContent);

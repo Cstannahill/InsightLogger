@@ -78,8 +78,13 @@ public sealed class EfCoreErrorPatternRepositoryTests
             Diagnostics: new[] { diagnostic },
             Groups: Array.Empty<DiagnosticGroup>(),
             RootCauseCandidates: Array.Empty<RootCauseCandidate>(),
+            MatchedRules: Array.Empty<InsightLogger.Domain.Rules.RuleMatch>(),
+            Narrative: null,
             Processing: processing,
+            Warnings: Array.Empty<string>(),
             Context: null,
+            ProjectName: null,
+            Repository: null,
             RawContentHash: $"hash_{analysisId}",
             RawContent: null,
             CreatedAtUtc: DateTimeOffset.UtcNow);

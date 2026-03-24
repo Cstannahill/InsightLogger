@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Net;
 using System.Text.Json;
 using FluentAssertions;
@@ -32,15 +33,27 @@ public sealed class OpenApiContractAssertionsTests : IClassFixture<WebApplicatio
 
         paths.TryGetProperty("/analyze/build-log", out var buildLogPath).Should().BeTrue();
         paths.TryGetProperty("/analyze/compiler-error", out var compilerErrorPath).Should().BeTrue();
+        paths.TryGetProperty("/analyses/narratives", out var narrativeHistoryPath).Should().BeTrue();
+        paths.TryGetProperty("/analyses/{analysisId}", out var analysisDetailPath).Should().BeTrue();
+        paths.TryGetProperty("/analyses/{analysisId}/narrative", out var narrativeDetailPath).Should().BeTrue();
 
         schemas.TryGetProperty("AnalyzeBuildLogRequest", out _).Should().BeTrue();
         schemas.TryGetProperty("AnalyzeBuildLogResponse", out _).Should().BeTrue();
         schemas.TryGetProperty("AnalyzeCompilerErrorRequest", out _).Should().BeTrue();
         schemas.TryGetProperty("AnalyzeCompilerErrorResponse", out _).Should().BeTrue();
+        schemas.TryGetProperty("GetAnalysisNarrativesResponse", out _).Should().BeTrue();
+        schemas.TryGetProperty("GetAnalysisResponse", out _).Should().BeTrue();
+        schemas.TryGetProperty("GetAnalysisNarrativeResponse", out _).Should().BeTrue();
+        schemas.TryGetProperty("AnalysisNarrativeHistoryItemContract", out _).Should().BeTrue();
         schemas.TryGetProperty("ApiErrorResponse", out _).Should().BeTrue();
 
         AssertOperation(buildLogPath.GetProperty("post"), "AnalyzeBuildLogRequest", "AnalyzeBuildLogResponse");
         AssertOperation(compilerErrorPath.GetProperty("post"), "AnalyzeCompilerErrorRequest", "AnalyzeCompilerErrorResponse");
+        var narrativeHistoryGet = narrativeHistoryPath.GetProperty("get");
+        narrativeHistoryGet.GetProperty("responses").TryGetProperty("200", out _).Should().BeTrue();
+        narrativeHistoryGet.GetProperty("parameters").EnumerateArray().Any(parameter => parameter.GetProperty("name").GetString() == "text").Should().BeTrue();
+        analysisDetailPath.GetProperty("get").GetProperty("responses").TryGetProperty("404", out _).Should().BeTrue();
+        narrativeDetailPath.GetProperty("get").GetProperty("responses").TryGetProperty("404", out _).Should().BeTrue();
     }
 
     [Fact]
@@ -89,6 +102,20 @@ public sealed class OpenApiContractAssertionsTests : IClassFixture<WebApplicatio
         narrativeProperties.TryGetProperty("groupSummaries", out _).Should().BeTrue();
         narrativeProperties.TryGetProperty("recommendedNextSteps", out _).Should().BeTrue();
         narrativeProperties.TryGetProperty("source", out _).Should().BeTrue();
+
+        schemas.TryGetProperty("GetAnalysisResponse", out var persistedAnalysisSchema).Should().BeTrue();
+        var persistedAnalysisProperties = persistedAnalysisSchema.GetProperty("properties");
+        persistedAnalysisProperties.TryGetProperty("context", out _).Should().BeTrue();
+        persistedAnalysisProperties.TryGetProperty("rawContentHash", out _).Should().BeTrue();
+        persistedAnalysisProperties.TryGetProperty("rawContentStored", out _).Should().BeTrue();
+
+        schemas.TryGetProperty("AnalysisNarrativeHistoryItemContract", out var historyItemSchema).Should().BeTrue();
+        var historyProperties = historyItemSchema.GetProperty("properties");
+        historyProperties.TryGetProperty("projectName", out _).Should().BeTrue();
+        historyProperties.TryGetProperty("repository", out _).Should().BeTrue();
+        historyProperties.TryGetProperty("summaryText", out _).Should().BeTrue();
+        historyProperties.TryGetProperty("matchedFields", out _).Should().BeTrue();
+        historyProperties.TryGetProperty("matchSnippet", out _).Should().BeTrue();
     }
 
     private static void AssertOperation(JsonElement operation, string requestSchemaName, string successSchemaName)

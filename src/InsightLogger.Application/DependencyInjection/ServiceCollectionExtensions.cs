@@ -1,4 +1,5 @@
 using InsightLogger.Application.Ai.Queries;
+using InsightLogger.Application.Analyses.Queries;
 using InsightLogger.Application.Analyses.Services;
 using InsightLogger.Application.Diagnostics.Queries;
 using InsightLogger.Application.Patterns.Queries;
@@ -16,6 +17,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<RootCauseRankingService>();
         services.AddScoped<RuleMatchingService>();
         services.AddScoped<IAnalysisService, AnalysisService>();
+        services.AddScoped<IAnalysisQueryService, AnalysisQueryService>();
+        services.AddScoped<IAnalysisNarrativeQueryService, AnalysisNarrativeQueryService>();
 
         services.AddScoped<IAiMetadataQueryService, AiMetadataQueryService>();
         services.AddScoped<IErrorFingerprintQueryService, ErrorFingerprintQueryService>();

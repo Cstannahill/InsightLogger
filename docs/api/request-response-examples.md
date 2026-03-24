@@ -972,3 +972,195 @@ Content-Type: application/json
   }
 }
 ```
+
+
+---
+
+## Example: query persisted narrative history
+
+### Request
+
+```http
+GET /analyses/narratives?repository=InsightLogger&text=nullable&limit=2
+```
+
+### Response
+
+```json
+{
+  "items": [
+    {
+      "analysisId": "anl_7d64f4f1a2d148f5b4f9f9d49cc9cb55",
+      "toolDetected": "dotnet",
+      "createdAtUtc": "2026-03-24T06:58:21.0000000+00:00",
+      "summary": {
+        "totalDiagnostics": 4,
+        "groupCount": 2,
+        "primaryIssueCount": 2,
+        "errorCount": 3,
+        "warningCount": 1
+      },
+      "summaryText": "The .NET log contains 4 diagnostics, grouped into 2 likely issue clusters. The strongest starting point is unknown symbol in current context.",
+      "source": "deterministic",
+      "provider": null,
+      "model": null,
+      "status": "completed",
+      "fallbackUsed": false,
+      "projectName": "InsightLogger.Api",
+      "repository": "InsightLogger",
+      "matchedFields": [
+        "summary",
+        "groupSummaries",
+        "recommendedNextSteps"
+      ],
+      "matchSnippet": "...contains a nullable warning cluster. Start with the nullable cluster before cleanup..."
+    }
+  ]
+}
+```
+
+## Example: query a persisted narrative by analysis id
+
+### Request
+
+```http
+GET /analyses/anl_7d64f4f1a2d148f5b4f9f9d49cc9cb55/narrative
+```
+
+### Response
+
+```json
+{
+  "analysisId": "anl_7d64f4f1a2d148f5b4f9f9d49cc9cb55",
+  "inputType": "build-log",
+  "toolDetected": "dotnet",
+  "createdAtUtc": "2026-03-24T06:58:21.0000000+00:00",
+  "summary": {
+    "totalDiagnostics": 4,
+    "groupCount": 2,
+    "primaryIssueCount": 2,
+    "errorCount": 3,
+    "warningCount": 1
+  },
+  "narrative": {
+    "summary": "The .NET log contains 4 diagnostics, grouped into 2 likely issue clusters. The strongest starting point is unknown symbol in current context.",
+    "groupSummaries": [
+      "Unknown symbol in current context: 2 related diagnostics matched fingerprint fp_cs0103_name_missing.",
+      "Non-nullable member not initialized: 1 related diagnostic matched fingerprint fp_cs8618_non_nullable_uninitialized."
+    ],
+    "recommendedNextSteps": [
+      "Check the symbol spelling.",
+      "Verify the symbol is declared before use.",
+      "Initialize the non-nullable member before constructor exit."
+    ],
+    "source": "deterministic",
+    "provider": null,
+    "model": null,
+    "status": "completed",
+    "fallbackUsed": false,
+    "reason": null
+  },
+  "projectName": "InsightLogger.Api",
+  "repository": "InsightLogger"
+}
+```
+
+
+## Persisted analysis retrieval
+
+### Request
+
+```http
+GET /analyses/anl_01HXYZ004
+```
+
+### Response
+
+```json
+{
+  "analysisId": "anl_01HXYZ004",
+  "inputType": "build-log",
+  "toolDetected": "dotnet",
+  "createdAtUtc": "2026-03-24T08:45:00Z",
+  "summary": {
+    "totalDiagnostics": 3,
+    "groupCount": 2,
+    "primaryIssueCount": 2,
+    "errorCount": 2,
+    "warningCount": 1
+  },
+  "rootCauseCandidates": [
+    {
+      "fingerprint": "fp_cs0103_name_missing",
+      "title": "Unknown symbol in current context",
+      "explanation": "The compiler cannot resolve a referenced name in the current scope.",
+      "confidence": 0.96,
+      "signals": ["diagnostic-code:CS0103"],
+      "likelyCauses": ["Typo in variable or member name"],
+      "suggestedFixes": ["Check the symbol spelling."]
+    }
+  ],
+  "groups": [
+    {
+      "fingerprint": "fp_cs0103_name_missing",
+      "count": 2,
+      "groupReason": "same-fingerprint",
+      "primaryDiagnosticId": "diag_1",
+      "relatedDiagnosticIds": ["diag_1", "diag_2"]
+    }
+  ],
+  "diagnostics": [
+    {
+      "id": "diag_1",
+      "tool": "dotnet",
+      "code": "CS0103",
+      "severity": "error",
+      "message": "The name 'builderz' does not exist in the current context",
+      "normalizedMessage": "The name '{identifier}' does not exist in the current context",
+      "filePath": "Program.cs",
+      "line": 14,
+      "column": 9,
+      "endLine": null,
+      "endColumn": null,
+      "category": "missing-symbol",
+      "subcategory": null,
+      "fingerprint": "fp_cs0103_name_missing",
+      "isPrimaryCandidate": true
+    }
+  ],
+  "matchedRules": [],
+  "narrative": {
+    "summary": "The .NET log contains 3 diagnostics grouped into 2 likely issue clusters.",
+    "groupSummaries": ["Unknown symbol cluster."],
+    "recommendedNextSteps": ["Check the symbol spelling."],
+    "source": "deterministic",
+    "provider": null,
+    "model": null,
+    "status": null,
+    "fallbackUsed": false,
+    "reason": null
+  },
+  "processing": {
+    "usedAi": false,
+    "durationMs": 24,
+    "parser": "dotnet-diagnostic-parser-v1",
+    "correlationId": "corr_01HXYZ004",
+    "toolDetectionConfidence": 1.0,
+    "parseConfidence": 0.98,
+    "unparsedSegmentCount": 0,
+    "notes": null,
+    "ai": null,
+    "aiTasks": []
+  },
+  "warnings": [],
+  "context": {
+    "projectName": "InsightLogger.Api",
+    "repository": "InsightLogger"
+  },
+  "projectName": "InsightLogger.Api",
+  "repository": "InsightLogger",
+  "rawContentHash": "9b6f5f7d0d6d9f6bcf9e6e9f9e8d1234567890abcdef1234567890abcdef1234",
+  "rawContentStored": false,
+  "rawContent": null
+}
+```

@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
 using InsightLogger.Api.Mapping;
+using InsightLogger.Application.Analyses.DTOs;
 using InsightLogger.Contracts.Analyses;
 using InsightLogger.Domain.Analyses;
 using InsightLogger.Domain.Diagnostics;
+using InsightLogger.Domain.Rules;
 using Xunit;
 
 namespace InsightLogger.ApiTests.Mapping;
@@ -93,6 +95,105 @@ public sealed class AnalysisContractMapperTests
         Assert.Contains(response.Processing.AiTasks, task => task.Feature == "explanation-enrichment");
         Assert.Contains(response.Processing.AiTasks, task => task.Feature == "root-cause-narrative");
         Assert.Single(response.Warnings!);
+    }
+
+
+    [Fact]
+    public void ToContract_ForPersistedNarrativeDtos_ShouldMapHistoryAndDetailContracts()
+    {
+        var detailDto = new PersistedAnalysisNarrativeDto(
+            AnalysisId: "anl_001",
+            InputType: InputType.BuildLog,
+            ToolDetected: ToolKind.DotNet,
+            CreatedAtUtc: new DateTimeOffset(2026, 03, 24, 6, 0, 0, TimeSpan.Zero),
+            Summary: new AnalysisSummary(3, 2, 2, 2, 1),
+            Narrative: AnalysisNarrative.Deterministic(
+                summary: "The .NET log contains multiple grouped issues.",
+                groupSummaries: new[] { "Unknown symbol cluster." },
+                recommendedNextSteps: new[] { "Fix the first error." }),
+            ProjectName: "InsightLogger.Api",
+            Repository: "InsightLogger");
+
+        var historyItems = new[]
+        {
+            new AnalysisNarrativeHistoryItemDto(
+                AnalysisId: "anl_001",
+                ToolDetected: ToolKind.DotNet,
+                CreatedAtUtc: detailDto.CreatedAtUtc,
+                Summary: detailDto.Summary,
+                SummaryText: detailDto.Narrative.Summary,
+                Source: detailDto.Narrative.Source,
+                Provider: detailDto.Narrative.Provider,
+                Model: detailDto.Narrative.Model,
+                Status: detailDto.Narrative.Status,
+                FallbackUsed: detailDto.Narrative.FallbackUsed,
+                ProjectName: detailDto.ProjectName,
+                Repository: detailDto.Repository,
+                MatchedFields: new[] { "summary", "recommendedNextSteps" },
+                MatchSnippet: "...multiple grouped issues...")
+        };
+
+        var history = AnalysisContractMapper.ToContract(historyItems);
+        var detail = AnalysisContractMapper.ToContract(detailDto);
+
+        Assert.Single(history.Items);
+        Assert.Equal("build-log", detail.InputType);
+        Assert.Equal("dotnet", detail.ToolDetected);
+        Assert.Equal("InsightLogger.Api", detail.ProjectName);
+        Assert.Equal("deterministic", history.Items[0].Source);
+        Assert.Contains("summary", history.Items[0].MatchedFields);
+        Assert.NotNull(history.Items[0].MatchSnippet);
+    }
+
+    [Fact]
+    public void ToContract_ForPersistedAnalysisDto_ShouldMapFullDetailContract()
+    {
+        var source = CreateAnalysisResult();
+        var dto = new PersistedAnalysisDto(
+            AnalysisId: source.AnalysisId,
+            InputType: source.InputType,
+            ToolDetected: source.ToolDetected,
+            CreatedAtUtc: new DateTimeOffset(2026, 03, 24, 7, 30, 0, TimeSpan.Zero),
+            Summary: source.Summary,
+            RootCauseCandidates: source.RootCauseCandidates,
+            Groups: source.Groups,
+            Diagnostics: source.Diagnostics,
+            MatchedRules: new[]
+            {
+                new RuleMatch(
+                    RuleId: "rule_001",
+                    TargetType: "candidate",
+                    TargetId: source.RootCauseCandidates[0].Fingerprint.Value,
+                    MatchedConditions: new[] { "tool", "code" },
+                    AppliedActions: new[] { "explanation", "suggested-fixes" },
+                    AppliedAt: new DateTimeOffset(2026, 03, 24, 7, 30, 0, TimeSpan.Zero))
+            },
+            Narrative: source.Narrative,
+            Processing: source.Processing,
+            Warnings: new[] { "deterministic fallback retained for a secondary item" },
+            Context: new Dictionary<string, string>
+            {
+                ["projectName"] = "InsightLogger.Api",
+                ["repository"] = "InsightLogger"
+            },
+            ProjectName: "InsightLogger.Api",
+            Repository: "InsightLogger",
+            RawContentHash: "hash_123",
+            RawContent: null);
+
+        var contract = AnalysisContractMapper.ToContract(dto);
+
+        Assert.Equal(dto.AnalysisId, contract.AnalysisId);
+        Assert.Equal("build-log", contract.InputType);
+        Assert.Equal("dotnet", contract.ToolDetected);
+        Assert.Equal(dto.Diagnostics.Count, contract.Diagnostics.Count);
+        Assert.Equal(dto.Groups.Count, contract.Groups.Count);
+        Assert.Equal(dto.RootCauseCandidates.Count, contract.RootCauseCandidates.Count);
+        Assert.Single(contract.MatchedRules);
+        Assert.Equal("hash_123", contract.RawContentHash);
+        Assert.False(contract.RawContentStored);
+        Assert.NotNull(contract.Context);
+        Assert.Equal("InsightLogger.Api", contract.ProjectName);
     }
 
     [Fact]

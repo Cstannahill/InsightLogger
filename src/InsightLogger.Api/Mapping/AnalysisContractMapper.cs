@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using InsightLogger.Application.Analyses.Commands;
+using InsightLogger.Application.Analyses.DTOs;
 using InsightLogger.Contracts.Analyses;
 using InsightLogger.Domain.Analyses;
 using InsightLogger.Domain.Diagnostics;
@@ -52,12 +53,7 @@ public static class AnalysisContractMapper
         return new AnalyzeBuildLogResponse(
             AnalysisId: result.AnalysisId,
             ToolDetected: ToContractTool(result.ToolDetected),
-            Summary: new AnalysisSummaryContract(
-                TotalDiagnostics: result.Summary.TotalDiagnostics,
-                GroupCount: result.Summary.GroupCount,
-                PrimaryIssueCount: result.Summary.PrimaryIssueCount,
-                ErrorCount: result.Summary.ErrorCount,
-                WarningCount: result.Summary.WarningCount),
+            Summary: ToContract(result.Summary),
             RootCauseCandidates: result.RootCauseCandidates.Select(ToContract).ToList(),
             Groups: includeGroups ? result.Groups.Select(ToContract).ToList() : Array.Empty<DiagnosticGroupContract>(),
             Diagnostics: includeDiagnostics ? result.Diagnostics.Select(ToContract).ToList() : Array.Empty<DiagnosticContract>(),
@@ -89,6 +85,50 @@ public static class AnalysisContractMapper
             MatchedRules: result.MatchedRules.Select(ToContract).ToList(),
             Processing: includeProcessing ? ToContract(result.Processing) : null,
             Warnings: result.Warnings);
+    }
+
+
+    public static GetAnalysisNarrativesResponse ToContract(IReadOnlyList<AnalysisNarrativeHistoryItemDto> items)
+        => new(items.Select(ToContract).ToArray());
+
+    public static GetAnalysisNarrativeResponse ToContract(PersistedAnalysisNarrativeDto dto)
+    {
+        ArgumentNullException.ThrowIfNull(dto);
+
+        return new GetAnalysisNarrativeResponse(
+            AnalysisId: dto.AnalysisId,
+            InputType: ToContractInputType(dto.InputType),
+            ToolDetected: ToContractTool(dto.ToolDetected),
+            CreatedAtUtc: dto.CreatedAtUtc,
+            Summary: ToContract(dto.Summary),
+            Narrative: ToContract(dto.Narrative),
+            ProjectName: dto.ProjectName,
+            Repository: dto.Repository);
+    }
+
+    public static GetAnalysisResponse ToContract(PersistedAnalysisDto dto)
+    {
+        ArgumentNullException.ThrowIfNull(dto);
+
+        return new GetAnalysisResponse(
+            AnalysisId: dto.AnalysisId,
+            InputType: ToContractInputType(dto.InputType),
+            ToolDetected: ToContractTool(dto.ToolDetected),
+            CreatedAtUtc: dto.CreatedAtUtc,
+            Summary: ToContract(dto.Summary),
+            RootCauseCandidates: dto.RootCauseCandidates.Select(ToContract).ToArray(),
+            Groups: dto.Groups.Select(ToContract).ToArray(),
+            Diagnostics: dto.Diagnostics.Select(ToContract).ToArray(),
+            MatchedRules: dto.MatchedRules.Select(ToContract).ToArray(),
+            Narrative: dto.Narrative is null ? null : ToContract(dto.Narrative),
+            Processing: ToContract(dto.Processing),
+            Warnings: dto.Warnings,
+            Context: dto.Context,
+            ProjectName: dto.ProjectName,
+            Repository: dto.Repository,
+            RawContentHash: dto.RawContentHash,
+            RawContentStored: !string.IsNullOrWhiteSpace(dto.RawContent),
+            RawContent: dto.RawContent);
     }
 
     public static bool TryParseTool(string? value, out ToolKind toolKind)
@@ -206,6 +246,23 @@ public static class AnalysisContractMapper
     }
 
 
+    private static AnalysisNarrativeHistoryItemContract ToContract(AnalysisNarrativeHistoryItemDto dto)
+        => new(
+            AnalysisId: dto.AnalysisId,
+            ToolDetected: ToContractTool(dto.ToolDetected),
+            CreatedAtUtc: dto.CreatedAtUtc,
+            Summary: ToContract(dto.Summary),
+            SummaryText: dto.SummaryText,
+            Source: dto.Source,
+            Provider: dto.Provider,
+            Model: dto.Model,
+            Status: dto.Status,
+            FallbackUsed: dto.FallbackUsed,
+            ProjectName: dto.ProjectName,
+            Repository: dto.Repository,
+            MatchedFields: dto.MatchedFields,
+            MatchSnippet: dto.MatchSnippet);
+
     private static AnalysisNarrativeContract ToContract(AnalysisNarrative narrative) =>
         new(
             Summary: narrative.Summary,
@@ -217,6 +274,14 @@ public static class AnalysisContractMapper
             Status: narrative.Status,
             FallbackUsed: narrative.FallbackUsed,
             Reason: narrative.Reason);
+
+    private static AnalysisSummaryContract ToContract(AnalysisSummary summary) =>
+        new(
+            TotalDiagnostics: summary.TotalDiagnostics,
+            GroupCount: summary.GroupCount,
+            PrimaryIssueCount: summary.PrimaryIssueCount,
+            ErrorCount: summary.ErrorCount,
+            WarningCount: summary.WarningCount);
 
     private static RootCauseCandidateContract ToContract(RootCauseCandidate candidate) =>
         new(
@@ -337,6 +402,13 @@ public static class AnalysisContractMapper
             }
         };
     }
+
+    private static string ToContractInputType(InputType inputType) => inputType switch
+    {
+        InputType.BuildLog => "build-log",
+        InputType.SingleDiagnostic => "single-diagnostic",
+        _ => inputType.ToString().ToLowerInvariant()
+    };
 
     private static string ToContractTool(ToolKind toolKind) => toolKind switch
     {

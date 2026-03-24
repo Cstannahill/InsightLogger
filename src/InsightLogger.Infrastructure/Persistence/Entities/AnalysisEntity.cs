@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace InsightLogger.Infrastructure.Persistence.Entities;
@@ -20,9 +21,21 @@ public sealed class AnalysisEntity
     public double ParseConfidence { get; set; }
     public int UnparsedSegmentCount { get; set; }
     public string? Notes { get; set; }
+    public string? NarrativeSummary { get; set; }
+    public string? NarrativeGroupSummariesJson { get; set; }
+    public string? NarrativeRecommendedNextStepsJson { get; set; }
+    public string? NarrativeSource { get; set; }
+    public string? NarrativeProvider { get; set; }
+    public string? NarrativeModel { get; set; }
+    public string? NarrativeStatus { get; set; }
+    public bool NarrativeFallbackUsed { get; set; }
+    public string? NarrativeReason { get; set; }
+    public string? ProjectName { get; set; }
+    public string? Repository { get; set; }
     public string RawContentHash { get; set; } = null!;
     public string? RawContent { get; set; }
     public string? ContextJson { get; set; }
+    public string? AnalysisSnapshotJson { get; set; }
     public DateTimeOffset CreatedAtUtc { get; set; }
 
     public ICollection<DiagnosticEntity> Diagnostics { get; set; } = new List<DiagnosticEntity>();

@@ -185,8 +185,11 @@ public sealed class AnalysisService : IAnalysisService
                 diagnostics,
                 groups,
                 rootCauseCandidates,
+                ruleEvaluation.Matches,
+                narrative,
                 ruleEvaluation.Applications,
                 processing,
+                warnings,
                 cancellationToken);
 
             if (!persistResult.Persisted && !string.IsNullOrWhiteSpace(persistResult.FailureReason))
