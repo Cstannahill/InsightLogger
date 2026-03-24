@@ -2,17 +2,17 @@ using System.Net;
 using System.Net.Http.Json;
 using FluentAssertions;
 using InsightLogger.Contracts.Ai;
+using InsightLogger.Contracts.Analyses;
 using InsightLogger.Contracts.Health;
-using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
-
+using InsightLogger.ApiTests.Infrastructure;
 namespace InsightLogger.ApiTests.Endpoints;
 
-public sealed class HealthEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
+public sealed class HealthEndpointsTests : IClassFixture<ApiTestWebApplicationFactory>
 {
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly ApiTestWebApplicationFactory _factory;
 
-    public HealthEndpointsTests(WebApplicationFactory<Program> factory)
+    public HealthEndpointsTests(ApiTestWebApplicationFactory factory)
     {
         _factory = factory;
     }
@@ -31,6 +31,39 @@ public sealed class HealthEndpointsTests : IClassFixture<WebApplicationFactory<P
         payload.Service.Should().Be("InsightLogger.Api");
         payload.Version.Should().NotBeNullOrWhiteSpace();
         payload.Timestamp.Should().BeCloseTo(DateTimeOffset.UtcNow, TimeSpan.FromMinutes(1));
+    }
+
+
+    [Fact]
+    public async Task GetTelemetry_ShouldReturn_Analysis_And_Http_Snapshot()
+    {
+        using var client = _factory.CreateClient();
+
+        var request = new AnalyzeCompilerErrorRequest(
+            Tool: "dotnet",
+            Content: "Program.cs(14,9): error CS0103: The name 'builderz' does not exist in the current context",
+            Options: new AnalyzeRequestOptionsContract(
+                Persist: false,
+                UseAiEnrichment: false,
+                IncludeRawDiagnostics: false,
+                IncludeGroups: false,
+                IncludeProcessingMetadata: true));
+
+        using var analysisResponse = await client.PostAsJsonAsync("/analyze/compiler-error", request);
+        analysisResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        using var response = await client.GetAsync("/health/telemetry");
+        var payload = await response.Content.ReadFromJsonAsync<GetTelemetryResponse>();
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        payload.Should().NotBeNull();
+        payload!.Enabled.Should().BeTrue();
+        payload.Service.Should().Be("InsightLogger.Api");
+        payload.Analysis.TotalRequests.Should().BeGreaterThan(0);
+        payload.Analysis.ToolSelections.Should().Contain(item => item.Name == "DotNet");
+        payload.Analysis.ParserSelections.Should().Contain(item => item.Name == "dotnet-diagnostic-parser-v1");
+        payload.Http.TotalRequests.Should().BeGreaterThan(0);
+        payload.Http.Routes.Should().Contain(item => item.Name == "/analyze/compiler-error");
     }
 
     [Fact]
@@ -126,3 +159,5 @@ public sealed class HealthEndpointsTests : IClassFixture<WebApplicationFactory<P
             item.DefaultModel == "openai/gpt-5-mini");
     }
 }
+
+

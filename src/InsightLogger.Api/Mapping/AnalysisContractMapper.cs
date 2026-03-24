@@ -1,9 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using AppKnowledgeReference = InsightLogger.Application.Abstractions.Knowledge.KnowledgeReference;
+using DomainKnowledgeReference = InsightLogger.Domain.Knowledge.KnowledgeReference;
 using InsightLogger.Application.Analyses.Commands;
 using InsightLogger.Application.Analyses.DTOs;
 using InsightLogger.Contracts.Analyses;
+using InsightLogger.Contracts.Common;
 using InsightLogger.Domain.Analyses;
 using InsightLogger.Domain.Diagnostics;
 using InsightLogger.Domain.Rules;
@@ -24,7 +27,8 @@ public static class AnalysisContractMapper
             Context: BuildBuildLogContext(request),
             Persist: request.Options?.Persist ?? false,
             UseAiEnrichment: request.Options?.UseAiEnrichment ?? false,
-            UseAiRootCauseNarrative: request.Options?.UseAiRootCauseNarrative ?? false);
+            UseAiRootCauseNarrative: request.Options?.UseAiRootCauseNarrative ?? false,
+            StoreRawContentWhenPersisting: request.Options?.PersistRawContent ?? false);
     }
 
     public static AnalyzeInputCommand ToCommand(AnalyzeCompilerErrorRequest request, string? correlationId)
@@ -39,7 +43,8 @@ public static class AnalysisContractMapper
             Context: BuildCompilerErrorContext(request),
             Persist: request.Options?.Persist ?? false,
             UseAiEnrichment: request.Options?.UseAiEnrichment ?? false,
-            UseAiRootCauseNarrative: false);
+            UseAiRootCauseNarrative: false,
+            StoreRawContentWhenPersisting: request.Options?.PersistRawContent ?? false);
     }
 
     public static AnalyzeBuildLogResponse ToBuildLogResponse(AnalysisResult result, AnalyzeRequestOptionsContract? options = null)
@@ -60,6 +65,7 @@ public static class AnalysisContractMapper
             MatchedRules: result.MatchedRules.Select(ToContract).ToList(),
             Narrative: result.Narrative is null ? null : ToContract(result.Narrative),
             Processing: includeProcessing ? ToContract(result.Processing) : null,
+            KnowledgeReferences: result.KnowledgeReferences.Select(ToContract).ToArray(),
             Warnings: result.Warnings);
     }
 
@@ -84,9 +90,9 @@ public static class AnalysisContractMapper
             Confidence: primaryCandidate?.Confidence ?? 0d,
             MatchedRules: result.MatchedRules.Select(ToContract).ToList(),
             Processing: includeProcessing ? ToContract(result.Processing) : null,
+            KnowledgeReferences: result.KnowledgeReferences.Select(ToContract).ToArray(),
             Warnings: result.Warnings);
     }
-
 
     public static GetAnalysisNarrativesResponse ToContract(IReadOnlyList<AnalysisNarrativeHistoryItemDto> items)
         => new(items.Select(ToContract).ToArray());
@@ -103,7 +109,8 @@ public static class AnalysisContractMapper
             Summary: ToContract(dto.Summary),
             Narrative: ToContract(dto.Narrative),
             ProjectName: dto.ProjectName,
-            Repository: dto.Repository);
+            Repository: dto.Repository,
+            KnowledgeReferences: (dto.KnowledgeReferences ?? Array.Empty<AppKnowledgeReference>()).Select(ToContract).ToArray());
     }
 
     public static GetAnalysisResponse ToContract(PersistedAnalysisDto dto)
@@ -128,7 +135,9 @@ public static class AnalysisContractMapper
             Repository: dto.Repository,
             RawContentHash: dto.RawContentHash,
             RawContentStored: !string.IsNullOrWhiteSpace(dto.RawContent),
-            RawContent: dto.RawContent);
+            RawContentRedacted: dto.RawContentRedacted,
+            RawContent: dto.RawContent,
+            KnowledgeReferences: (dto.KnowledgeReferences ?? Array.Empty<AppKnowledgeReference>()).Select(ToContract).ToArray());
     }
 
     public static bool TryParseTool(string? value, out ToolKind toolKind)
@@ -245,7 +254,6 @@ public static class AnalysisContractMapper
         return result.RootCauseCandidates.FirstOrDefault();
     }
 
-
     private static AnalysisNarrativeHistoryItemContract ToContract(AnalysisNarrativeHistoryItemDto dto)
         => new(
             AnalysisId: dto.AnalysisId,
@@ -351,6 +359,30 @@ public static class AnalysisContractMapper
             Reason: metadata.Reason,
             Feature: metadata.Feature);
 
+    private static KnowledgeReferenceContract ToContract(DomainKnowledgeReference reference) =>
+        new(
+            Id: reference.Id,
+            Kind: reference.Kind,
+            Source: reference.Source,
+            Title: reference.Title,
+            Summary: reference.Summary,
+            Url: reference.Url,
+            ResourceType: reference.ResourceType,
+            ResourceId: reference.ResourceId,
+            Tags: reference.Tags);
+
+    private static KnowledgeReferenceContract ToContract(AppKnowledgeReference reference) =>
+        new(
+            Id: reference.Id,
+            Kind: reference.Kind,
+            Source: reference.Source,
+            Title: reference.Title,
+            Summary: reference.Summary,
+            Url: reference.Url,
+            ResourceType: reference.ResourceType,
+            ResourceId: reference.ResourceId,
+            Tags: reference.Tags);
+
     private static IReadOnlyList<string> BuildLikelyCauses(DiagnosticRecord? diagnostic)
     {
         if (diagnostic is null)
@@ -441,3 +473,7 @@ public static class AnalysisContractMapper
         _ => category.ToString().ToLowerInvariant()
     };
 }
+
+
+
+

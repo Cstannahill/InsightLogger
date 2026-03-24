@@ -34,6 +34,7 @@ public sealed class AnalysisEntity
     public string? Repository { get; set; }
     public string RawContentHash { get; set; } = null!;
     public string? RawContent { get; set; }
+    public bool RawContentRedacted { get; set; }
     public string? ContextJson { get; set; }
     public string? AnalysisSnapshotJson { get; set; }
     public DateTimeOffset CreatedAtUtc { get; set; }
@@ -42,3 +43,5 @@ public sealed class AnalysisEntity
     public ICollection<DiagnosticGroupEntity> Groups { get; set; } = new List<DiagnosticGroupEntity>();
     public ICollection<PatternOccurrenceEntity> PatternOccurrences { get; set; } = new List<PatternOccurrenceEntity>();
 }
+
+

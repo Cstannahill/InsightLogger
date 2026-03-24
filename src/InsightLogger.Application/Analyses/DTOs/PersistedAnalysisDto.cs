@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using InsightLogger.Application.Abstractions.Knowledge;
 using InsightLogger.Domain.Analyses;
 using InsightLogger.Domain.Diagnostics;
 using InsightLogger.Domain.Rules;
@@ -23,4 +24,6 @@ public sealed record PersistedAnalysisDto(
     string? ProjectName,
     string? Repository,
     string RawContentHash,
-    string? RawContent);
+    bool RawContentRedacted,
+    string? RawContent,
+    IReadOnlyList<KnowledgeReference>? KnowledgeReferences = null);

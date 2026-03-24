@@ -13,4 +13,5 @@ public sealed record ExplanationEnrichmentRequest(
     IReadOnlyList<string> Signals,
     string? NormalizedMessage = null,
     IReadOnlyDictionary<string, string>? Context = null,
-    string? CorrelationId = null);
+    string? CorrelationId = null
+);

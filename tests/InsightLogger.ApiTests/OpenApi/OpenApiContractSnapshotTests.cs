@@ -52,7 +52,8 @@ public sealed class OpenApiContractSnapshotTests : IClassFixture<WebApplicationF
                 ["/analyze/compiler-error"] = BuildOperationSnapshot(paths["/analyze/compiler-error"]!["post"]!.AsObject()),
                 ["/analyses/narratives"] = BuildGetOperationSnapshot(paths["/analyses/narratives"]!["get"]!.AsObject()),
                 ["/analyses/{analysisId}"] = BuildGetOperationSnapshot(paths["/analyses/{analysisId}"]!["get"]!.AsObject()),
-                ["/analyses/{analysisId}/narrative"] = BuildGetOperationSnapshot(paths["/analyses/{analysisId}/narrative"]!["get"]!.AsObject())
+                ["/analyses/{analysisId}/narrative"] = BuildGetOperationSnapshot(paths["/analyses/{analysisId}/narrative"]!["get"]!.AsObject()),
+                ["/health/telemetry"] = BuildGetOperationSnapshot(paths["/health/telemetry"]!["get"]!.AsObject())
             },
             ["schemas"] = new JsonArray(
                 "AnalyzeBuildLogRequest",
@@ -63,6 +64,9 @@ public sealed class OpenApiContractSnapshotTests : IClassFixture<WebApplicationF
                 "GetAnalysisResponse",
                 "GetAnalysisNarrativeResponse",
                 "AnalysisNarrativeHistoryItemContract",
+                "GetTelemetryResponse",
+                "AnalysisTelemetrySummaryContract",
+                "HttpTelemetrySummaryContract",
                 "ApiErrorResponse")
         };
 
@@ -113,7 +117,9 @@ public sealed class OpenApiContractSnapshotTests : IClassFixture<WebApplicationF
         var successSchema = responses["200"]!["content"]!["application/json"]!["schema"]!["$ref"]!.GetValue<string>();
         var errorSchema = responses.ContainsKey("400")
             ? responses["400"]!["content"]!["application/json"]!["schema"]!["$ref"]!.GetValue<string>()
-            : responses["404"]!["content"]!["application/json"]!["schema"]!["$ref"]!.GetValue<string>();
+            : responses.ContainsKey("404")
+                ? responses["404"]!["content"]!["application/json"]!["schema"]!["$ref"]!.GetValue<string>()
+                : responses["500"]!["content"]!["application/json"]!["schema"]!["$ref"]!.GetValue<string>();
 
         return new JsonObject
         {

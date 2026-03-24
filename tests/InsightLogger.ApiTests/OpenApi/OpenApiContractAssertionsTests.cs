@@ -34,6 +34,7 @@ public sealed class OpenApiContractAssertionsTests : IClassFixture<WebApplicatio
         paths.TryGetProperty("/analyze/build-log", out var buildLogPath).Should().BeTrue();
         paths.TryGetProperty("/analyze/compiler-error", out var compilerErrorPath).Should().BeTrue();
         paths.TryGetProperty("/analyses/narratives", out var narrativeHistoryPath).Should().BeTrue();
+        paths.TryGetProperty("/health/telemetry", out var telemetryPath).Should().BeTrue();
         paths.TryGetProperty("/analyses/{analysisId}", out var analysisDetailPath).Should().BeTrue();
         paths.TryGetProperty("/analyses/{analysisId}/narrative", out var narrativeDetailPath).Should().BeTrue();
 
@@ -45,11 +46,13 @@ public sealed class OpenApiContractAssertionsTests : IClassFixture<WebApplicatio
         schemas.TryGetProperty("GetAnalysisResponse", out _).Should().BeTrue();
         schemas.TryGetProperty("GetAnalysisNarrativeResponse", out _).Should().BeTrue();
         schemas.TryGetProperty("AnalysisNarrativeHistoryItemContract", out _).Should().BeTrue();
+        schemas.TryGetProperty("GetTelemetryResponse", out _).Should().BeTrue();
         schemas.TryGetProperty("ApiErrorResponse", out _).Should().BeTrue();
 
         AssertOperation(buildLogPath.GetProperty("post"), "AnalyzeBuildLogRequest", "AnalyzeBuildLogResponse");
         AssertOperation(compilerErrorPath.GetProperty("post"), "AnalyzeCompilerErrorRequest", "AnalyzeCompilerErrorResponse");
         var narrativeHistoryGet = narrativeHistoryPath.GetProperty("get");
+        telemetryPath.GetProperty("get").GetProperty("responses").TryGetProperty("200", out _).Should().BeTrue();
         narrativeHistoryGet.GetProperty("responses").TryGetProperty("200", out _).Should().BeTrue();
         narrativeHistoryGet.GetProperty("parameters").EnumerateArray().Any(parameter => parameter.GetProperty("name").GetString() == "text").Should().BeTrue();
         analysisDetailPath.GetProperty("get").GetProperty("responses").TryGetProperty("404", out _).Should().BeTrue();
@@ -73,6 +76,7 @@ public sealed class OpenApiContractAssertionsTests : IClassFixture<WebApplicatio
 
         schemas.TryGetProperty("AnalyzeRequestOptionsContract", out var requestOptionsSchema).Should().BeTrue();
         requestOptionsSchema.GetProperty("properties").TryGetProperty("useAiRootCauseNarrative", out _).Should().BeTrue();
+        requestOptionsSchema.GetProperty("properties").TryGetProperty("persistRawContent", out _).Should().BeTrue();
 
 
         var compilerSchema = schemas.GetProperty("AnalyzeCompilerErrorResponse").GetProperty("properties");
@@ -108,8 +112,26 @@ public sealed class OpenApiContractAssertionsTests : IClassFixture<WebApplicatio
         persistedAnalysisProperties.TryGetProperty("context", out _).Should().BeTrue();
         persistedAnalysisProperties.TryGetProperty("rawContentHash", out _).Should().BeTrue();
         persistedAnalysisProperties.TryGetProperty("rawContentStored", out _).Should().BeTrue();
+        persistedAnalysisProperties.TryGetProperty("rawContentRedacted", out _).Should().BeTrue();
 
         schemas.TryGetProperty("AnalysisNarrativeHistoryItemContract", out var historyItemSchema).Should().BeTrue();
+
+        schemas.TryGetProperty("GetTelemetryResponse", out var telemetrySchema).Should().BeTrue();
+        var telemetryProperties = telemetrySchema.GetProperty("properties");
+        telemetryProperties.TryGetProperty("analysis", out _).Should().BeTrue();
+        telemetryProperties.TryGetProperty("http", out _).Should().BeTrue();
+
+        schemas.TryGetProperty("AnalysisTelemetrySummaryContract", out var analysisTelemetrySchema).Should().BeTrue();
+        var analysisTelemetryProperties = analysisTelemetrySchema.GetProperty("properties");
+        analysisTelemetryProperties.TryGetProperty("totalRequests", out _).Should().BeTrue();
+        analysisTelemetryProperties.TryGetProperty("toolSelections", out _).Should().BeTrue();
+        analysisTelemetryProperties.TryGetProperty("topFingerprints", out _).Should().BeTrue();
+
+        schemas.TryGetProperty("HttpTelemetrySummaryContract", out var httpTelemetrySchema).Should().BeTrue();
+        var httpTelemetryProperties = httpTelemetrySchema.GetProperty("properties");
+        httpTelemetryProperties.TryGetProperty("totalRequests", out _).Should().BeTrue();
+        httpTelemetryProperties.TryGetProperty("routes", out _).Should().BeTrue();
+
         var historyProperties = historyItemSchema.GetProperty("properties");
         historyProperties.TryGetProperty("projectName", out _).Should().BeTrue();
         historyProperties.TryGetProperty("repository", out _).Should().BeTrue();
@@ -157,3 +179,5 @@ public sealed class OpenApiContractAssertionsTests : IClassFixture<WebApplicatio
         errorSchemaRef.Should().EndWith("/ApiErrorResponse");
     }
 }
+
+

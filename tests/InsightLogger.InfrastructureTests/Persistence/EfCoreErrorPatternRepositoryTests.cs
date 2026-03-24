@@ -87,6 +87,9 @@ public sealed class EfCoreErrorPatternRepositoryTests
             Repository: null,
             RawContentHash: $"hash_{analysisId}",
             RawContent: null,
+            RawContentRedacted: false,
             CreatedAtUtc: DateTimeOffset.UtcNow);
     }
 }
+
+

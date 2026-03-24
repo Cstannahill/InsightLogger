@@ -4,7 +4,7 @@ Project documentation for InsightLogger.
 
 ## Current implementation status
 
-The codebase now includes twenty-three implemented scaffolding slices:
+The codebase now includes twenty-seven implemented scaffolding slices:
 
 1. InitialSlice
 - Core domain models for diagnostics and analyses
@@ -161,6 +161,27 @@ The codebase now includes twenty-three implemented scaffolding slices:
 - Added frontend integration/reference documentation for a separate React + TypeScript UI workspace.
 - Added `docs/frontend/react-typescript-integration.md` covering route design, endpoint/query mapping, typed client-shape guidance, UI state expectations, and component/data-boundary recommendations for analysis/history/detail views.
 
+24. ObservabilityTelemetrySlice
+- Added OpenTelemetry registration for ASP.NET Core, outgoing `HttpClient`, and custom `InsightLogger.Analysis` activities.
+- Added in-process telemetry aggregation for analysis pipeline and HTTP request behavior, exposed through `GET /health/telemetry`.
+- Added `docs/operations/observability-telemetry.md` covering configuration, metrics/traces shape, and practical v1 observability guidance.
+
+25. KnowledgeReferencesRetrievalSlice
+- Added knowledge-reference retrieval flow so analysis and narrative history responses can include related prior-analysis and known-pattern references.
+- Added knowledge-reference domain/contracts/mapping surfaces and supporting query/repository integration.
+- Added API/application/infrastructure coverage for deterministic reference projection behavior.
+
+26. StructuredRedactedLoggingSlice
+- Added structured JSON request/analysis/persistence/AI-exception logging with shared correlation scope fields.
+- Added deterministic log redaction (`LogRedactor`) for secrets/tokens/paths/urls/emails and truncated exception payloads.
+- Added `RequestLoggingMiddleware` plus `X-Request-Id`/`X-Correlation-Id` response header propagation for request tracing.
+- Added `docs/operations/structured-redacted-logging.md` documenting logging fields, privacy behavior, and operational notes.
+
+27. PrivacyRetentionControlsSlice
+- Added configurable privacy policy controls for raw-content persistence, write-time redaction, and retention windows.
+- Added privacy operations endpoints: `GET /privacy/settings`, `POST /privacy/retention/apply`, `DELETE /analyses/{analysisId}/raw-content`, and `DELETE /analyses/{analysisId}`.
+- Added request-level `persistRawContent` option (gated by `persist`) and persisted `rawContentRedacted` metadata in analysis retrieval contracts.
+- Added migration `20260324103000_AddAnalysisRawContentPrivacy` and API/application/infrastructure/integration coverage for privacy retention behavior.
 
 ## API description endpoint policy
 
@@ -186,6 +207,12 @@ Next planned increments remain:
 
 ## Recent maintenance updates
 
+- Switched HealthEndpointsTests to ApiTestWebApplicationFactory so test analysis requests run against migrated SQLite schema (avoids 500s from missing Rules table in default factory configuration).
+
+- Made API header assertions in endpoint tests case-tolerant for `X-Request-Id` to avoid runtime header-casing differences (`X-Request-ID` vs `X-Request-Id`).
+- Aligned `InsightLogger.Infrastructure` package versions for `.NET 9` by setting `Microsoft.Extensions.Http` to `9.*` to avoid `NU1605` downgrade conflicts with `Microsoft.Extensions.Logging.Abstractions`.
+- Fixed `LogRedactor` regex literal escaping in `InsightLogger.Application` (`GeneratedRegex` attribute strings) to resolve build-time syntax errors.
+- Fixed `AnalysisService` compile drift by restoring full `TryPersistAsync(...)` argument list and normalizing telemetry fingerprint projection to `IReadOnlyList<string>`.
 - Added root-level `README.md` with a standard public-facing project overview (purpose, features, endpoint summary, quick start, usage flow, architecture links) while keeping this file as the detailed implementation log.
 - Updated `.gitignore` for public-repo hygiene by ignoring local `.dotnet` cache directories while explicitly un-ignoring `samples/logs/**` so canonical sample log fixtures remain versioned.
 - Added `.gitignore` rules for SQLite artifacts under `App_Data` (`*.db`, `*.sqlite*`, `*.db-shm`, `*.db-wal`) so local runtime/test database files do not leak into source control.
@@ -265,4 +292,8 @@ Next planned increments remain:
   - query shapes and URL-state guidance
   - UI state recommendations
   - component/data-boundary guidance for analysis, history, narrative, and detail views
-- Refreshed root `README.md` to a current public-repo format aligned with persisted-analysis/narrative APIs, AI metadata/enrichment capabilities, and frontend integration reference documentation.
+
+- Integrated ObservabilityTelemetrySlice: added OpenTelemetry tracing/metrics registration, in-memory telemetry aggregation for analysis + HTTP flows, `GET /health/telemetry`, and supporting API/infrastructure test coverage.
+
+
+

@@ -4,6 +4,7 @@ using InsightLogger.Application.Ai.Queries;
 using InsightLogger.Contracts.Ai;
 using InsightLogger.Contracts.Common;
 using InsightLogger.Contracts.Health;
+using InsightLogger.Application.Telemetry.Queries;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -22,6 +23,12 @@ public static class HealthEndpoints
             .Produces<GetHealthResponse>(StatusCodes.Status200OK)
             .Produces<ApiErrorResponse>(StatusCodes.Status500InternalServerError)
             .WithSummary("Return basic service health.");
+
+        healthGroup.MapGet("/telemetry", HandleGetTelemetryAsync)
+            .WithName("GetTelemetry")
+            .Produces<GetTelemetryResponse>(StatusCodes.Status200OK)
+            .Produces<ApiErrorResponse>(StatusCodes.Status500InternalServerError)
+            .WithSummary("Return in-process telemetry snapshot for analysis and HTTP activity.");
 
         healthGroup.MapGet("/ai", HandleGetAiHealthAsync)
             .WithName("GetAiHealth")
@@ -45,6 +52,15 @@ public static class HealthEndpoints
             Service: "InsightLogger.Api",
             Version: ResolveVersion(),
             Timestamp: DateTimeOffset.UtcNow));
+    }
+
+
+    private static async Task<IResult> HandleGetTelemetryAsync(
+        ITelemetryQueryService queryService,
+        CancellationToken cancellationToken)
+    {
+        var result = await queryService.GetSnapshotAsync(cancellationToken);
+        return TypedResults.Ok(TelemetryContractMapper.ToContract(result));
     }
 
     private static async Task<IResult> HandleGetAiHealthAsync(

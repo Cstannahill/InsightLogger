@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using InsightLogger.Application.Abstractions.Knowledge;
 using InsightLogger.Domain.Analyses;
 using InsightLogger.Domain.Diagnostics;
 
@@ -12,4 +14,5 @@ public sealed record PersistedAnalysisNarrativeDto(
     AnalysisSummary Summary,
     AnalysisNarrative Narrative,
     string? ProjectName,
-    string? Repository);
+    string? Repository,
+    IReadOnlyList<KnowledgeReference>? KnowledgeReferences = null);

@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using InsightLogger.Api.Constants;
 using Microsoft.AspNetCore.Http;
 
@@ -18,5 +19,34 @@ public static class HttpContextExtensions
         return string.IsNullOrWhiteSpace(httpContext.TraceIdentifier)
             ? null
             : httpContext.TraceIdentifier;
+    }
+
+    public static string? GetRequestId(this HttpContext httpContext)
+    {
+        ArgumentNullException.ThrowIfNull(httpContext);
+
+        return string.IsNullOrWhiteSpace(httpContext.TraceIdentifier)
+            ? null
+            : httpContext.TraceIdentifier;
+    }
+
+    public static string? GetTraceId(this HttpContext httpContext)
+    {
+        ArgumentNullException.ThrowIfNull(httpContext);
+
+        var traceId = Activity.Current?.TraceId.ToString();
+        return string.IsNullOrWhiteSpace(traceId)
+            ? null
+            : traceId;
+    }
+
+    public static string? GetSpanId(this HttpContext httpContext)
+    {
+        ArgumentNullException.ThrowIfNull(httpContext);
+
+        var spanId = Activity.Current?.SpanId.ToString();
+        return string.IsNullOrWhiteSpace(spanId)
+            ? null
+            : spanId;
     }
 }

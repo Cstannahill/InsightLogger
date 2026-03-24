@@ -49,6 +49,7 @@ Build FAILED.
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Headers.Should().ContainKey("X-Correlation-Id");
+        response.Headers.Contains("X-Request-Id").Should().BeTrue();
 
         payload.Should().NotBeNull();
         payload!.ToolDetected.Should().Be("dotnet");

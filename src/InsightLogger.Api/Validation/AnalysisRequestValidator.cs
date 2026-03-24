@@ -15,6 +15,7 @@ public static class AnalysisRequestValidator
         ArgumentNullException.ThrowIfNull(request);
 
         var errors = ValidateCommon(request.Tool, request.Content);
+        ValidateOptions(request.Options, errors);
         return errors;
     }
 
@@ -23,6 +24,7 @@ public static class AnalysisRequestValidator
         ArgumentNullException.ThrowIfNull(request);
 
         var errors = ValidateCommon(request.Tool, request.Content);
+        ValidateOptions(request.Options, errors);
         return errors;
     }
 
@@ -45,5 +47,18 @@ public static class AnalysisRequestValidator
         }
 
         return errors;
+    }
+
+    private static void ValidateOptions(AnalyzeRequestOptionsContract? options, ICollection<ValidationErrorDetail> errors)
+    {
+        if (options is null)
+        {
+            return;
+        }
+
+        if (options.PersistRawContent && !options.Persist)
+        {
+            errors.Add(new ValidationErrorDetail("options.persistRawContent", "PersistRawContent can only be true when Persist is also true."));
+        }
     }
 }

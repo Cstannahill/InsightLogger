@@ -1,6 +1,9 @@
 using System;
+using System.Linq;
+using InsightLogger.Application.Abstractions.Knowledge;
 using InsightLogger.Application.Abstractions.Persistence;
 using InsightLogger.Application.Diagnostics.DTOs;
+using InsightLogger.Application.Knowledge.Services;
 
 namespace InsightLogger.Application.Diagnostics.Queries;
 
@@ -8,13 +11,16 @@ public sealed class ErrorFingerprintQueryService : IErrorFingerprintQueryService
 {
     private readonly IErrorPatternReadRepository _patternRepository;
     private readonly IRuleRepository _ruleRepository;
+    private readonly IKnowledgeReferenceService? _knowledgeReferenceService;
 
     public ErrorFingerprintQueryService(
         IErrorPatternReadRepository patternRepository,
-        IRuleRepository ruleRepository)
+        IRuleRepository ruleRepository,
+        IKnowledgeReferenceService? knowledgeReferenceService = null)
     {
         _patternRepository = patternRepository;
         _ruleRepository = ruleRepository;
+        _knowledgeReferenceService = knowledgeReferenceService;
     }
 
     public async Task<ErrorFingerprintDetailsDto?> GetByFingerprintAsync(
@@ -30,6 +36,24 @@ public sealed class ErrorFingerprintQueryService : IErrorFingerprintQueryService
         }
 
         var relatedRules = await _ruleRepository.GetRelatedRuleSummariesByFingerprintAsync(query.Fingerprint, cancellationToken);
-        return pattern with { RelatedRules = relatedRules };
+        var enriched = pattern with { RelatedRules = relatedRules };
+
+        if (_knowledgeReferenceService is null)
+        {
+            return enriched;
+        }
+
+        var references = await _knowledgeReferenceService.GetReferencesAsync(
+            new KnowledgeReferenceRequest(
+                toolKind: enriched.ToolKind,
+                diagnosticCodes: string.IsNullOrWhiteSpace(enriched.DiagnosticCode)
+                    ? Array.Empty<string>()
+                    : [enriched.DiagnosticCode!],
+                fingerprints: [enriched.Fingerprint],
+                categories: [enriched.Category],
+                matchedRuleIds: enriched.RelatedRules.Select(static rule => rule.Id).ToArray()),
+            cancellationToken);
+
+        return enriched with { KnowledgeReferences = references };
     }
 }

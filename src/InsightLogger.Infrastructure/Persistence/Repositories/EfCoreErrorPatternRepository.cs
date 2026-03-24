@@ -52,6 +52,7 @@ public sealed class EfCoreErrorPatternRepository : IErrorPatternRepository
                     CanonicalMessage = diagnostic.NormalizedMessage,
                     ToolKind = diagnostic.ToolKind.ToString(),
                     Category = diagnostic.Category.ToString(),
+                    DiagnosticCode = diagnostic.Code,
                     FirstSeenAtUtc = request.CreatedAtUtc,
                     LastSeenAtUtc = request.CreatedAtUtc,
                     OccurrenceCount = 0,
@@ -68,6 +69,7 @@ public sealed class EfCoreErrorPatternRepository : IErrorPatternRepository
             pattern.CanonicalMessage = diagnostic.NormalizedMessage;
             pattern.ToolKind = diagnostic.ToolKind.ToString();
             pattern.Category = diagnostic.Category.ToString();
+            pattern.DiagnosticCode = diagnostic.Code ?? pattern.DiagnosticCode;
             pattern.LastSuggestedFix = SelectLastSuggestedFix(request, fingerprint) ?? pattern.LastSuggestedFix;
 
             await _dbContext.PatternOccurrences.AddAsync(new PatternOccurrenceEntity

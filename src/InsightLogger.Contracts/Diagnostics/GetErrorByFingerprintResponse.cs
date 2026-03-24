@@ -1,3 +1,6 @@
+using System.Collections.Generic;
+using InsightLogger.Contracts.Common;
+
 namespace InsightLogger.Contracts.Diagnostics;
 
 public sealed record GetErrorByFingerprintResponse(
@@ -9,5 +12,7 @@ public sealed record GetErrorByFingerprintResponse(
     int OccurrenceCount,
     DateTimeOffset FirstSeenAt,
     DateTimeOffset LastSeenAt,
+    string? DiagnosticCode,
     IReadOnlyList<string> KnownFixes,
-    IReadOnlyList<RelatedRuleSummaryContract> RelatedRules);
+    IReadOnlyList<RelatedRuleSummaryContract> RelatedRules,
+    IReadOnlyList<KnowledgeReferenceContract> KnowledgeReferences);

@@ -6,4 +6,5 @@ public sealed record AnalyzeRequestOptionsContract(
     bool IncludeRawDiagnostics = true,
     bool IncludeGroups = true,
     bool IncludeProcessingMetadata = true,
-    bool UseAiRootCauseNarrative = false);
+    bool UseAiRootCauseNarrative = false,
+    bool PersistRawContent = false);

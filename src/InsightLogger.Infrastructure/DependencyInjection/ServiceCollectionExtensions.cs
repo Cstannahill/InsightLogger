@@ -3,7 +3,9 @@ using System.IO;
 using InsightLogger.Application.Abstractions.Ai;
 using InsightLogger.Application.Abstractions.Parsing;
 using InsightLogger.Application.Abstractions.Persistence;
+using InsightLogger.Application.Abstractions.Privacy;
 using InsightLogger.Application.Abstractions.Rules;
+using InsightLogger.Application.Abstractions.Telemetry;
 using InsightLogger.Application.Analyses.Persistence;
 using InsightLogger.Infrastructure.Ai;
 using InsightLogger.Infrastructure.Parsing;
@@ -14,7 +16,9 @@ using InsightLogger.Infrastructure.Parsing.Python;
 using InsightLogger.Infrastructure.Parsing.TypeScript;
 using InsightLogger.Infrastructure.Persistence.Db;
 using InsightLogger.Infrastructure.Persistence.Repositories;
+using InsightLogger.Infrastructure.Privacy;
 using InsightLogger.Infrastructure.Rules;
+using InsightLogger.Infrastructure.Telemetry;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -42,7 +46,9 @@ public static class ServiceCollectionExtensions
         IConfiguration configuration)
     {
         services.Configure<PersistenceOptions>(configuration.GetSection(PersistenceOptions.SectionName));
+        services.Configure<PrivacyOptions>(configuration.GetSection(PrivacyOptions.SectionName));
         services.Configure<AiOptions>(configuration.GetSection(AiOptions.SectionName));
+        services.Configure<InsightLoggerTelemetryOptions>(configuration.GetSection(InsightLoggerTelemetryOptions.SectionName));
 
         services.AddDbContext<InsightLoggerDbContext>((serviceProvider, options) =>
         {
@@ -55,14 +61,17 @@ public static class ServiceCollectionExtensions
         });
 
         services.AddHttpClient();
+        services.AddSingleton<IInsightLoggerTelemetry, InsightLoggerTelemetry>();
         services.AddScoped<AnalysisPersistenceService>();
         services.AddScoped<IAnalysisPersistenceRepository, EfCoreAnalysisPersistenceRepository>();
         services.AddScoped<IAnalysisReadRepository, EfCoreAnalysisReadRepository>();
+        services.AddScoped<IAnalysisPrivacyRepository, EfCoreAnalysisPrivacyRepository>();
         services.AddScoped<IAnalysisNarrativeReadRepository, EfCoreAnalysisNarrativeReadRepository>();
         services.AddScoped<IErrorPatternRepository, EfCoreErrorPatternRepository>();
         services.AddScoped<IErrorPatternReadRepository, EfCoreErrorPatternReadRepository>();
         services.AddScoped<IRuleRepository, EfCoreRuleRepository>();
         services.AddScoped<IInsightLoggerUnitOfWork, EfCoreInsightLoggerUnitOfWork>();
+        services.AddSingleton<IPrivacyPolicyProvider, ConfiguredPrivacyPolicyProvider>();
         services.AddSingleton<IRuleMatcher, DeterministicRuleMatcher>();
         services.AddSingleton<IAiProviderCatalog, ConfiguredAiProviderCatalog>();
         services.AddSingleton<IAiProviderHealthService, ConfiguredAiProviderHealthService>();
@@ -82,20 +91,25 @@ public static class ServiceCollectionExtensions
             options.Enabled = true;
             options.AutoMigrate = false;
         });
+        services.Configure<PrivacyOptions>(_ => { });
         services.Configure<AiOptions>(_ => { });
+        services.Configure<InsightLoggerTelemetryOptions>(_ => { });
 
         EnsureSqliteDirectoryExists(connectionString);
 
         services.AddHttpClient();
+        services.AddSingleton<IInsightLoggerTelemetry, InsightLoggerTelemetry>();
         services.AddDbContext<InsightLoggerDbContext>(options => options.UseSqlite(connectionString));
         services.AddScoped<AnalysisPersistenceService>();
         services.AddScoped<IAnalysisPersistenceRepository, EfCoreAnalysisPersistenceRepository>();
         services.AddScoped<IAnalysisReadRepository, EfCoreAnalysisReadRepository>();
+        services.AddScoped<IAnalysisPrivacyRepository, EfCoreAnalysisPrivacyRepository>();
         services.AddScoped<IAnalysisNarrativeReadRepository, EfCoreAnalysisNarrativeReadRepository>();
         services.AddScoped<IErrorPatternRepository, EfCoreErrorPatternRepository>();
         services.AddScoped<IErrorPatternReadRepository, EfCoreErrorPatternReadRepository>();
         services.AddScoped<IRuleRepository, EfCoreRuleRepository>();
         services.AddScoped<IInsightLoggerUnitOfWork, EfCoreInsightLoggerUnitOfWork>();
+        services.AddSingleton<IPrivacyPolicyProvider, ConfiguredPrivacyPolicyProvider>();
         services.AddSingleton<IRuleMatcher, DeterministicRuleMatcher>();
         services.AddSingleton<IAiProviderCatalog, ConfiguredAiProviderCatalog>();
         services.AddSingleton<IAiProviderHealthService, ConfiguredAiProviderHealthService>();

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using InsightLogger.Contracts.Common;
 
 namespace InsightLogger.Contracts.Analyses;
 
@@ -21,4 +22,6 @@ public sealed record GetAnalysisResponse(
     string? Repository,
     string RawContentHash,
     bool RawContentStored,
-    string? RawContent);
+    bool RawContentRedacted,
+    string? RawContent,
+    IReadOnlyList<KnowledgeReferenceContract> KnowledgeReferences);

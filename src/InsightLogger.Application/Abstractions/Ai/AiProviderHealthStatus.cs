@@ -4,4 +4,5 @@ public sealed record AiProviderHealthStatus(
     string Name,
     string Status,
     string? DefaultModel,
-    string? Reason);
+    string? Reason
+);

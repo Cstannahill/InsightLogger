@@ -13,7 +13,8 @@ public sealed record AiRootCauseNarrativeResult(
     string? Model,
     string Status,
     bool FallbackUsed,
-    string? Reason)
+    string? Reason
+)
 {
     public static AiRootCauseNarrativeResult Successful(
         string summary,
@@ -21,8 +22,9 @@ public sealed record AiRootCauseNarrativeResult(
         IReadOnlyList<string>? recommendedNextSteps,
         string provider,
         string model,
-        bool fallbackUsed = false)
-        => new(
+        bool fallbackUsed = false
+    ) =>
+        new(
             Success: true,
             Summary: Normalize(summary),
             GroupSummaries: NormalizeItems(groupSummaries),
@@ -31,15 +33,17 @@ public sealed record AiRootCauseNarrativeResult(
             Model: model,
             Status: "completed",
             FallbackUsed: fallbackUsed,
-            Reason: null);
+            Reason: null
+        );
 
     public static AiRootCauseNarrativeResult Failure(
         string status,
         string? reason,
         string? provider = null,
         string? model = null,
-        bool fallbackUsed = false)
-        => new(
+        bool fallbackUsed = false
+    ) =>
+        new(
             Success: false,
             Summary: null,
             GroupSummaries: Array.Empty<string>(),
@@ -48,7 +52,8 @@ public sealed record AiRootCauseNarrativeResult(
             Model: model,
             Status: status,
             FallbackUsed: fallbackUsed,
-            Reason: reason);
+            Reason: reason
+        );
 
     private static IReadOnlyList<string> NormalizeItems(IReadOnlyList<string>? values)
     {

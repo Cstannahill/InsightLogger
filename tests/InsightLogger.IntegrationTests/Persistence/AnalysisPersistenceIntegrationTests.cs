@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -93,6 +94,33 @@ public sealed class AnalysisPersistenceIntegrationTests : IDisposable
         analysis.AnalysisSnapshotJson.Should().NotBeNullOrWhiteSpace();
     }
 
+
+    [Fact]
+    public async Task Analyze_build_log_persist_raw_content_true_should_store_redacted_raw_content()
+    {
+        await using var serviceProvider = BuildServiceProvider();
+        await using var scope = serviceProvider.CreateAsyncScope();
+
+        var dbContext = scope.ServiceProvider.GetRequiredService<InsightLoggerDbContext>();
+        await dbContext.Database.EnsureCreatedAsync();
+
+        var analysisService = scope.ServiceProvider.GetRequiredService<IAnalysisService>();
+        var content = "Program.cs(14,9): error CS0103: The name 'builderz' does not exist in the current context. token=abc123 contact dev@example.com see https://example.com and C:\\src\\Program.cs";
+
+        await analysisService.AnalyzeAsync(new AnalyzeInputCommand(
+            Content: content,
+            InputType: InputType.BuildLog,
+            Persist: true,
+            StoreRawContentWhenPersisting: true));
+
+        var analysis = await dbContext.Analyses.SingleAsync();
+        analysis.RawContent.Should().NotBeNull();
+        analysis.RawContentRedacted.Should().BeTrue();
+        analysis.RawContent.Should().Contain("[redacted-token]");
+        analysis.RawContent.Should().Contain("[redacted-email]");
+        analysis.RawContent.Should().Contain("[redacted-url]");
+        analysis.RawContent.Should().Contain("[redacted-path]");
+    }
     private ServiceProvider BuildServiceProvider()
     {
         var services = new ServiceCollection();
@@ -117,3 +145,6 @@ public sealed class AnalysisPersistenceIntegrationTests : IDisposable
         }
     }
 }
+
+
+

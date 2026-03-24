@@ -1,5 +1,6 @@
 using InsightLogger.Application.Abstractions.Persistence;
 using InsightLogger.Application.Diagnostics.DTOs;
+using InsightLogger.Application.Knowledge.DTOs;
 using InsightLogger.Application.Patterns.DTOs;
 using InsightLogger.Domain.Diagnostics;
 using InsightLogger.Infrastructure.Persistence.Db;
@@ -38,10 +39,41 @@ public sealed class EfCoreErrorPatternReadRepository : IErrorPatternReadReposito
             OccurrenceCount: entity.OccurrenceCount,
             FirstSeenAtUtc: entity.FirstSeenAtUtc,
             LastSeenAtUtc: entity.LastSeenAtUtc,
+            DiagnosticCode: entity.DiagnosticCode,
             KnownFixes: string.IsNullOrWhiteSpace(entity.LastSuggestedFix)
                 ? Array.Empty<string>()
                 : new[] { entity.LastSuggestedFix! },
-            RelatedRules: Array.Empty<RelatedRuleSummaryDto>());
+            RelatedRules: Array.Empty<RelatedRuleSummaryDto>(),
+            KnowledgeReferences: Array.Empty<InsightLogger.Application.Abstractions.Knowledge.KnowledgeReference>());
+    }
+
+    public async Task<IReadOnlyList<KnownPatternReferenceDto>> GetReferenceSummariesByFingerprintsAsync(
+        IReadOnlyCollection<string> fingerprints,
+        CancellationToken cancellationToken = default)
+    {
+        if (fingerprints.Count == 0)
+        {
+            return Array.Empty<KnownPatternReferenceDto>();
+        }
+
+        var items = await _dbContext.ErrorPatterns
+            .AsNoTracking()
+            .Where(pattern => fingerprints.Contains(pattern.Fingerprint))
+            .ToListAsync(cancellationToken);
+
+        return items
+            .OrderByDescending(pattern => pattern.OccurrenceCount)
+            .ThenByDescending(pattern => pattern.LastSeenAtUtc)
+            .Select(pattern => new KnownPatternReferenceDto(
+                Fingerprint: pattern.Fingerprint,
+                Title: pattern.Title ?? "Observed recurring diagnostic pattern",
+                ToolKind: ParseToolKind(pattern.ToolKind),
+                Category: ParseCategory(pattern.Category),
+                OccurrenceCount: pattern.OccurrenceCount,
+                LastSeenAtUtc: pattern.LastSeenAtUtc,
+                DiagnosticCode: pattern.DiagnosticCode,
+                LastSuggestedFix: pattern.LastSuggestedFix))
+            .ToArray();
     }
 
     public async Task<IReadOnlyList<TopPatternItemDto>> GetTopPatternsAsync(

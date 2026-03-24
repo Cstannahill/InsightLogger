@@ -27,6 +27,7 @@ public sealed class AnalysisEntityConfiguration : IEntityTypeConfiguration<Analy
         builder.Property(x => x.ContextJson).HasColumnType("TEXT");
         builder.Property(x => x.AnalysisSnapshotJson).HasColumnType("TEXT");
         builder.Property(x => x.RawContent).HasColumnType("TEXT");
+        builder.Property(x => x.RawContentRedacted).HasDefaultValue(false);
         builder.Property(x => x.Notes).HasColumnType("TEXT");
         builder.Property(x => x.NarrativeSummary).HasColumnType("TEXT");
         builder.Property(x => x.NarrativeGroupSummariesJson).HasColumnType("TEXT");
@@ -56,3 +57,5 @@ public sealed class AnalysisEntityConfiguration : IEntityTypeConfiguration<Analy
             .OnDelete(DeleteBehavior.Cascade);
     }
 }
+
+

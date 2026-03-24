@@ -52,6 +52,14 @@
         "404",
         "500"
       ]
+    },
+    "/health/telemetry": {
+      "successSchema": "GetTelemetryResponse",
+      "errorSchema": "ApiErrorResponse",
+      "responseCodes": [
+        "200",
+        "500"
+      ]
     }
   },
   "schemas": [
@@ -63,6 +71,9 @@
     "GetAnalysisResponse",
     "GetAnalysisNarrativeResponse",
     "AnalysisNarrativeHistoryItemContract",
+    "GetTelemetryResponse",
+    "AnalysisTelemetrySummaryContract",
+    "HttpTelemetrySummaryContract",
     "ApiErrorResponse"
   ]
 }

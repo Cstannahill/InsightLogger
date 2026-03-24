@@ -1,6 +1,9 @@
 using System;
+using System.Linq;
+using InsightLogger.Application.Abstractions.Knowledge;
 using InsightLogger.Application.Abstractions.Persistence;
 using InsightLogger.Application.Analyses.DTOs;
+using InsightLogger.Application.Knowledge.Services;
 
 namespace InsightLogger.Application.Analyses.Queries;
 
@@ -9,20 +12,65 @@ public sealed class AnalysisNarrativeQueryService : IAnalysisNarrativeQueryServi
     private static readonly string[] AllowedSources = ["deterministic", "ai"];
 
     private readonly IAnalysisNarrativeReadRepository _repository;
+    private readonly IAnalysisReadRepository? _analysisReadRepository;
+    private readonly IKnowledgeReferenceService? _knowledgeReferenceService;
 
-    public AnalysisNarrativeQueryService(IAnalysisNarrativeReadRepository repository)
+    public AnalysisNarrativeQueryService(
+        IAnalysisNarrativeReadRepository repository,
+        IAnalysisReadRepository? analysisReadRepository = null,
+        IKnowledgeReferenceService? knowledgeReferenceService = null)
     {
         _repository = repository;
+        _analysisReadRepository = analysisReadRepository;
+        _knowledgeReferenceService = knowledgeReferenceService;
     }
 
-    public Task<PersistedAnalysisNarrativeDto?> GetByAnalysisIdAsync(
+    public async Task<PersistedAnalysisNarrativeDto?> GetByAnalysisIdAsync(
         GetAnalysisNarrativeQuery query,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(query);
         ArgumentException.ThrowIfNullOrWhiteSpace(query.AnalysisId);
 
-        return _repository.GetByAnalysisIdAsync(query.AnalysisId.Trim(), cancellationToken);
+        var dto = await _repository.GetByAnalysisIdAsync(query.AnalysisId.Trim(), cancellationToken);
+        if (dto is null || _analysisReadRepository is null || _knowledgeReferenceService is null)
+        {
+            return dto;
+        }
+
+        var persistedAnalysis = await _analysisReadRepository.GetByAnalysisIdAsync(query.AnalysisId.Trim(), cancellationToken);
+        if (persistedAnalysis is null)
+        {
+            return dto;
+        }
+
+        var references = await _knowledgeReferenceService.GetReferencesAsync(
+            new KnowledgeReferenceRequest(
+                toolKind: dto.ToolDetected,
+                diagnosticCodes: persistedAnalysis.Diagnostics
+                    .Select(static diagnostic => diagnostic.Code)
+                    .Where(static code => !string.IsNullOrWhiteSpace(code))
+                    .Select(static code => code!)
+                    .Take(4)
+                    .ToArray(),
+                fingerprints: persistedAnalysis.RootCauseCandidates
+                    .Select(static candidate => candidate.Fingerprint.Value)
+                    .Concat(persistedAnalysis.Diagnostics
+                        .Where(static diagnostic => diagnostic.Fingerprint is not null)
+                        .Select(static diagnostic => diagnostic.Fingerprint!.Value.Value))
+                    .Distinct(StringComparer.Ordinal)
+                    .Take(6)
+                    .ToArray(),
+                categories: persistedAnalysis.Diagnostics
+                    .Select(static diagnostic => diagnostic.Category)
+                    .Distinct()
+                    .ToArray(),
+                matchedRuleIds: persistedAnalysis.MatchedRules.Select(static match => match.RuleId).ToArray(),
+                context: persistedAnalysis.Context,
+                analysisId: dto.AnalysisId),
+            cancellationToken);
+
+        return dto with { KnowledgeReferences = references };
     }
 
     public Task<IReadOnlyList<AnalysisNarrativeHistoryItemDto>> GetRecentAsync(

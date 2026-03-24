@@ -6,12 +6,16 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using InsightLogger.Application.Abstractions.Persistence;
+using InsightLogger.Application.Abstractions.Privacy;
 using InsightLogger.Application.Analyses.Commands;
 using InsightLogger.Application.Analyses.DTOs;
+using InsightLogger.Application.Logging;
 using InsightLogger.Application.Rules.DTOs;
 using InsightLogger.Domain.Analyses;
 using InsightLogger.Domain.Diagnostics;
 using InsightLogger.Domain.Rules;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace InsightLogger.Application.Analyses.Persistence;
 
@@ -21,17 +25,23 @@ public sealed class AnalysisPersistenceService
     private readonly IErrorPatternRepository _errorPatternRepository;
     private readonly IRuleRepository _ruleRepository;
     private readonly IInsightLoggerUnitOfWork _unitOfWork;
+    private readonly IPrivacyPolicyProvider _privacyPolicyProvider;
+    private readonly ILogger<AnalysisPersistenceService> _logger;
 
     public AnalysisPersistenceService(
         IAnalysisPersistenceRepository analysisPersistenceRepository,
         IErrorPatternRepository errorPatternRepository,
         IRuleRepository ruleRepository,
-        IInsightLoggerUnitOfWork unitOfWork)
+        IInsightLoggerUnitOfWork unitOfWork,
+        IPrivacyPolicyProvider privacyPolicyProvider,
+        ILogger<AnalysisPersistenceService>? logger = null)
     {
         _analysisPersistenceRepository = analysisPersistenceRepository;
         _errorPatternRepository = errorPatternRepository;
         _ruleRepository = ruleRepository;
         _unitOfWork = unitOfWork;
+        _privacyPolicyProvider = privacyPolicyProvider;
+        _logger = logger ?? NullLogger<AnalysisPersistenceService>.Instance;
     }
 
     public async Task<(bool Persisted, string? FailureReason)> TryPersistAsync(
@@ -56,6 +66,16 @@ public sealed class AnalysisPersistenceService
 
         try
         {
+            _logger.LogInformation(
+                "Persisting analysis result. AnalysisId={AnalysisId} Tool={ToolDetected} Diagnostics={DiagnosticCount} Groups={GroupCount} Candidates={CandidateCount} MatchedRules={MatchedRuleCount} RawContentStored={RawContentStored}.",
+                analysisId,
+                toolDetected,
+                diagnostics.Count,
+                groups.Count,
+                rootCauseCandidates.Count,
+                matchedRules.Count,
+                command.StoreRawContentWhenPersisting);
+
             var request = BuildRequest(
                 analysisId,
                 command,
@@ -79,15 +99,28 @@ public sealed class AnalysisPersistenceService
                     ct);
             }, cancellationToken);
 
+            _logger.LogInformation(
+                "Persisted analysis result successfully. AnalysisId={AnalysisId} RawContentHashPrefix={RawContentHashPrefix}.",
+                analysisId,
+                request.RawContentHash[..Math.Min(12, request.RawContentHash.Length)]);
+
             return (true, null);
         }
         catch (Exception ex)
         {
-            return (false, $"persistence-failure:{ex.GetType().Name}");
+            var failureReason = $"persistence-failure:{ex.GetType().Name}";
+
+            _logger.LogWarning(
+                "Failed to persist analysis result. AnalysisId={AnalysisId} FailureReason={FailureReason} ExceptionMessage={ExceptionMessage}.",
+                analysisId,
+                failureReason,
+                LogRedactor.Redact(ex.Message));
+
+            return (false, failureReason);
         }
     }
 
-    private static AnalysisPersistenceRequest BuildRequest(
+    private AnalysisPersistenceRequest BuildRequest(
         string analysisId,
         AnalyzeInputCommand command,
         ToolKind toolDetected,
@@ -101,6 +134,9 @@ public sealed class AnalysisPersistenceService
         IReadOnlyList<string> warnings)
     {
         var createdAtUtc = DateTimeOffset.UtcNow;
+        var policy = _privacyPolicyProvider.GetCurrentPolicy();
+        var rawContent = ResolveStoredRawContent(command, policy, out var rawContentRedacted);
+
         return new AnalysisPersistenceRequest(
             AnalysisId: analysisId,
             InputType: command.InputType,
@@ -117,7 +153,8 @@ public sealed class AnalysisPersistenceService
             ProjectName: TryGetContextValue(command.Context, "projectName"),
             Repository: TryGetContextValue(command.Context, "repository"),
             RawContentHash: ComputeSha256(command.Content),
-            RawContent: command.StoreRawContentWhenPersisting ? command.Content : null,
+            RawContent: rawContent,
+            RawContentRedacted: rawContentRedacted,
             CreatedAtUtc: createdAtUtc);
     }
 
@@ -139,7 +176,28 @@ public sealed class AnalysisPersistenceService
             ProjectName: request.ProjectName,
             Repository: request.Repository,
             RawContentHash: request.RawContentHash,
+            RawContentRedacted: request.RawContentRedacted,
             RawContent: request.RawContent);
+
+    private static string? ResolveStoredRawContent(AnalyzeInputCommand command, PrivacyPolicy policy, out bool rawContentRedacted)
+    {
+        rawContentRedacted = false;
+
+        if (!command.StoreRawContentWhenPersisting || !policy.RawContentStorageEnabled)
+        {
+            return null;
+        }
+
+        var content = command.Content;
+        if (!policy.RedactRawContentOnWrite)
+        {
+            return content;
+        }
+
+        var filtered = StoredRawContentPrivacyFilter.Apply(content);
+        rawContentRedacted = filtered.WasRedacted;
+        return filtered.Content;
+    }
 
     private static string? TryGetContextValue(IReadOnlyDictionary<string, string>? context, string key)
     {

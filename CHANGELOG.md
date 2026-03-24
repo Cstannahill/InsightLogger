@@ -1,6 +1,10 @@
 ## Unreleased
 
 ### Added
+- Integrated `ObservabilityTelemetrySlice`:
+- Added OpenTelemetry tracing/metrics registration for ASP.NET Core, outgoing `HttpClient`, and custom `InsightLogger.Analysis` activities.
+- Added in-memory telemetry aggregation for analysis and HTTP activity, exposed through `GET /health/telemetry`.
+- Added telemetry contracts/mapping/configuration plus API/infrastructure test coverage and an operations guide (`docs/operations/observability-telemetry.md`).
 - Added `docs/frontend/react-typescript-integration.md`, a React + TypeScript frontend integration/reference spec covering route/page flows, endpoint/query mapping, typed query shapes, UI states, timeline rendering guidance, and recommended component/data boundaries for analyze/history/detail/AI status views.
 - Updated `docs/README.md` to index frontend integration guidance for the separate UI workspace.
 - Integrated `TypeScriptParserSlice`:
@@ -59,6 +63,19 @@
 - Extended `GET /analyses/narratives` with optional `text` filtering for historical narrative search across persisted summary/group/next-step/reason/project/repository/provider/model fields.
 - Added deterministic search-result match metadata (`matchedFields`, `matchSnippet`) for frontend result previews and detail-page navigation.
 - Added API/OpenAPI/infrastructure test coverage and updated narrative history docs/examples for text-matching behavior.
+- Integrated `KnowledgeReferencesRetrievalSlice`:
+- Added knowledge-reference retrieval and projection support so analysis and narrative-history responses can include related prior analyses and known-pattern references.
+- Added knowledge-reference domain/contracts/mapping/query/repository integration and supporting API/application/infrastructure coverage.
+- Integrated `StructuredRedactedLoggingSlice`:
+- Added structured JSON logging with request/analysis/persistence/AI correlation fields and consistent request-scope enrichment.
+- Added deterministic sensitive-data redaction via `LogRedactor` and routed exception/provider error logging through redacted messages.
+- Added `RequestLoggingMiddleware` and request tracing headers (`X-Correlation-Id`, `X-Request-Id`) plus operations documentation (`docs/operations/structured-redacted-logging.md`).
+- Integrated `PrivacyRetentionControlsSlice`:
+- Added request-level raw-content persistence control (`persistRawContent`) while keeping raw-content storage disabled unless explicitly requested.
+- Added configurable `Privacy` policy options for raw-content storage enablement, write-time redaction, raw-content retention window, and persisted analysis retention window.
+- Added privacy control endpoints (`GET /privacy/settings`, `POST /privacy/retention/apply`, `DELETE /analyses/{analysisId}/raw-content`, `DELETE /analyses/{analysisId}`) plus API/OpenAPI/application/infrastructure/integration test coverage.
+- Added persisted raw-content redaction metadata (`rawContentRedacted`) and migration `20260324103000_AddAnalysisRawContentPrivacy`.
+
 ### Fixed
 - Resolved `NpmDiagnosticParser` compile failure (`CS0136`) by renaming shadowed local variables in the missing-script parsing branch.
 - Resolved `RuleService` compile failure (`CS0246`) by restoring `InsightLogger.Application.Analyses.Services` import for `DiagnosticGroupingService` and `RootCauseRankingService`.
@@ -67,5 +84,7 @@
 - Preserved prior rule-persistence/recurrence fixes during scoped-rule integration by keeping `AnalysisService` persistence wired to `RuleEvaluationResult.Applications`, retaining SQLite-safe client-side ordering in related-rule context lookup, and persisting direct `RecordMatchesAsync` updates with `SaveChangesAsync`.
 - Resolved `RuleServiceRuleTestingTests` compile errors after scoped-rule integration by restoring analysis-service imports and replacing removed `RuleTestResultDto.Matched` assertions with `Matches`-based assertions.
 - Adjusted `AnalysisServiceRuleMatchingTests.AnalyzeAsync_Respects_Project_And_Repository_Scope_From_Context` assertions to accept both diagnostic and group `RuleMatch` targets while enforcing scoped-condition match metadata on each result.
+
+
 
 

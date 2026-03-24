@@ -1,9 +1,11 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using InsightLogger.Api.Constants;
 using InsightLogger.Api.Exceptions;
 using InsightLogger.Api.Extensions;
 using InsightLogger.Api.Results;
+using InsightLogger.Application.Logging;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 
@@ -38,7 +40,23 @@ public sealed class ApiExceptionHandlingMiddleware
         }
         catch (Exception exception)
         {
-            _logger.LogError(exception, "Unhandled exception while processing request {Method} {Path}.", context.Request.Method, context.Request.Path);
+            using var scope = _logger.BeginScope(new Dictionary<string, object?>
+            {
+                ["correlationId"] = context.GetCorrelationId(),
+                ["requestId"] = context.GetRequestId(),
+                ["traceId"] = context.GetTraceId(),
+                ["spanId"] = context.GetSpanId(),
+                ["httpMethod"] = context.Request.Method,
+                ["requestPath"] = context.Request.Path.Value
+            });
+
+            _logger.LogError(
+                "Unhandled exception while processing request. Method={Method} Path={Path} ExceptionType={ExceptionType} ExceptionMessage={ExceptionMessage}.",
+                context.Request.Method,
+                context.Request.Path.Value,
+                exception.GetType().Name,
+                LogRedactor.Redact(exception.Message));
+
             await WriteInternalErrorAsync(context, exception);
         }
     }

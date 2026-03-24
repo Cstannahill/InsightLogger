@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using InsightLogger.Domain.Diagnostics;
+using InsightLogger.Domain.Knowledge;
 using InsightLogger.Domain.Rules;
 
 namespace InsightLogger.Domain.Analyses;
@@ -18,7 +19,8 @@ public sealed class AnalysisResult
         AnalysisNarrative? narrative = null,
         ProcessingMetadata? processing = null,
         string? analysisId = null,
-        IReadOnlyList<string>? warnings = null)
+        IReadOnlyList<string>? warnings = null,
+        IReadOnlyList<KnowledgeReference>? knowledgeReferences = null)
     {
         AnalysisId = string.IsNullOrWhiteSpace(analysisId) ? $"anl_{Guid.NewGuid():N}" : analysisId.Trim();
         InputType = inputType;
@@ -31,6 +33,7 @@ public sealed class AnalysisResult
         Narrative = narrative;
         Processing = processing ?? new ProcessingMetadata(false, 0, null, null, 0d, 0d, 0, null, null);
         Warnings = warnings ?? Array.Empty<string>();
+        KnowledgeReferences = knowledgeReferences ?? Array.Empty<KnowledgeReference>();
     }
 
     public string AnalysisId { get; }
@@ -44,6 +47,7 @@ public sealed class AnalysisResult
     public AnalysisNarrative? Narrative { get; }
     public ProcessingMetadata Processing { get; }
     public IReadOnlyList<string> Warnings { get; }
+    public IReadOnlyList<KnowledgeReference> KnowledgeReferences { get; }
 
     public AnalysisResult WithProcessing(ProcessingMetadata processing) =>
         new(
@@ -57,7 +61,8 @@ public sealed class AnalysisResult
             narrative: Narrative,
             processing: processing,
             analysisId: AnalysisId,
-            warnings: Warnings);
+            warnings: Warnings,
+            knowledgeReferences: KnowledgeReferences);
 
     public AnalysisResult WithEnrichedCandidates(
         IReadOnlyList<RootCauseCandidate> rootCauseCandidates,
@@ -74,7 +79,8 @@ public sealed class AnalysisResult
             narrative: Narrative,
             processing: processing,
             analysisId: AnalysisId,
-            warnings: warnings ?? Warnings);
+            warnings: warnings ?? Warnings,
+            knowledgeReferences: KnowledgeReferences);
 
     public AnalysisResult WithNarrative(
         AnalysisNarrative? narrative,
@@ -91,5 +97,6 @@ public sealed class AnalysisResult
             narrative: narrative,
             processing: processing,
             analysisId: AnalysisId,
-            warnings: warnings ?? Warnings);
+            warnings: warnings ?? Warnings,
+            knowledgeReferences: KnowledgeReferences);
 }

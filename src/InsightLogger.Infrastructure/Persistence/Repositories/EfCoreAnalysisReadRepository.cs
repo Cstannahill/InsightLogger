@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using InsightLogger.Application.Abstractions.Persistence;
 using InsightLogger.Application.Analyses.DTOs;
+using InsightLogger.Application.Knowledge.DTOs;
 using InsightLogger.Domain.Analyses;
 using InsightLogger.Domain.Diagnostics;
 using InsightLogger.Infrastructure.Persistence.Db;
@@ -45,11 +46,75 @@ public sealed class EfCoreAnalysisReadRepository : IAnalysisReadRepository
             var snapshot = JsonSerializer.Deserialize<PersistedAnalysisDto>(entity.AnalysisSnapshotJson, JsonOptions);
             if (snapshot is not null)
             {
-                return snapshot;
+                return snapshot with
+                {
+                    RawContent = entity.RawContent,
+                    RawContentRedacted = entity.RawContentRedacted
+                };
             }
         }
 
         return MapFallback(entity);
+    }
+
+    public async Task<IReadOnlyList<RelatedAnalysisReferenceDto>> GetRecentRelatedAnalysesAsync(
+        IReadOnlyCollection<string> fingerprints,
+        string? excludeAnalysisId,
+        string? projectName,
+        string? repository,
+        int limit,
+        CancellationToken cancellationToken = default)
+    {
+        if (fingerprints.Count == 0 || limit <= 0)
+        {
+            return Array.Empty<RelatedAnalysisReferenceDto>();
+        }
+
+        IQueryable<PatternOccurrenceEntity> query = _dbContext.PatternOccurrences
+            .AsNoTracking()
+            .Include(occurrence => occurrence.Analysis)
+            .Where(occurrence => fingerprints.Contains(occurrence.Fingerprint));
+
+        if (!string.IsNullOrWhiteSpace(excludeAnalysisId))
+        {
+            query = query.Where(occurrence => occurrence.AnalysisId != excludeAnalysisId);
+        }
+
+        if (!string.IsNullOrWhiteSpace(projectName))
+        {
+            query = query.Where(occurrence => occurrence.Analysis.ProjectName == projectName);
+        }
+
+        if (!string.IsNullOrWhiteSpace(repository))
+        {
+            query = query.Where(occurrence => occurrence.Analysis.Repository == repository);
+        }
+
+        var occurrences = await query.ToListAsync(cancellationToken);
+
+        return occurrences
+            .GroupBy(occurrence => occurrence.AnalysisId, StringComparer.Ordinal)
+            .Select(group =>
+            {
+                var latest = group
+                    .OrderByDescending(static occurrence => occurrence.Analysis.CreatedAtUtc)
+                    .First();
+
+                return new RelatedAnalysisReferenceDto(
+                    AnalysisId: latest.AnalysisId,
+                    ToolKind: ParseToolKind(latest.Analysis.ToolDetected),
+                    CreatedAtUtc: latest.Analysis.CreatedAtUtc,
+                    SummaryText: BuildSummaryText(latest.Analysis),
+                    ProjectName: latest.Analysis.ProjectName,
+                    Repository: latest.Analysis.Repository,
+                    MatchingFingerprints: group
+                        .Select(static occurrence => occurrence.Fingerprint)
+                        .Distinct(StringComparer.Ordinal)
+                        .ToArray());
+            })
+            .OrderByDescending(static item => item.CreatedAtUtc)
+            .Take(limit)
+            .ToArray();
     }
 
     private static PersistedAnalysisDto MapFallback(AnalysisEntity entity)
@@ -91,7 +156,9 @@ public sealed class EfCoreAnalysisReadRepository : IAnalysisReadRepository
             ProjectName: entity.ProjectName,
             Repository: entity.Repository,
             RawContentHash: entity.RawContentHash,
-            RawContent: entity.RawContent);
+            RawContentRedacted: entity.RawContentRedacted,
+            RawContent: entity.RawContent,
+            KnowledgeReferences: Array.Empty<InsightLogger.Application.Abstractions.Knowledge.KnowledgeReference>());
 
     private static DiagnosticRecord MapDiagnostic(DiagnosticEntity entity)
         => new(
@@ -158,6 +225,16 @@ public sealed class EfCoreAnalysisReadRepository : IAnalysisReadRepository
         return JsonSerializer.Deserialize<string[]>(json, JsonOptions) ?? Array.Empty<string>();
     }
 
+    private static string BuildSummaryText(AnalysisEntity entity)
+    {
+        if (!string.IsNullOrWhiteSpace(entity.NarrativeSummary))
+        {
+            return entity.NarrativeSummary!;
+        }
+
+        return $"{entity.TotalDiagnostics} diagnostics across {entity.GroupCount} groups; {entity.PrimaryIssueCount} primary issues identified.";
+    }
+
     private static ToolKind ParseToolKind(string? value)
         => Enum.TryParse<ToolKind>(value, ignoreCase: true, out var parsed) ? parsed : ToolKind.Unknown;
 
@@ -170,3 +247,5 @@ public sealed class EfCoreAnalysisReadRepository : IAnalysisReadRepository
     private static DiagnosticCategory ParseCategory(string? value)
         => Enum.TryParse<DiagnosticCategory>(value, ignoreCase: true, out var parsed) ? parsed : DiagnosticCategory.Unknown;
 }
+
+

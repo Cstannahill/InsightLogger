@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using InsightLogger.Application.Knowledge.DTOs;
 using InsightLogger.Application.Patterns.DTOs;
 using InsightLogger.Application.Abstractions.Persistence;
 using InsightLogger.Application.Diagnostics.DTOs;
@@ -37,11 +38,16 @@ public sealed class ErrorFingerprintQueryServiceTests
                 OccurrenceCount: 10,
                 FirstSeenAtUtc: DateTimeOffset.UtcNow.AddDays(-2),
                 LastSeenAtUtc: DateTimeOffset.UtcNow,
+                DiagnosticCode: "CS0103",
                 KnownFixes: new[] { "Check spelling." },
                 RelatedRules: Array.Empty<RelatedRuleSummaryDto>());
 
             return Task.FromResult<ErrorFingerprintDetailsDto?>(dto);
         }
+
+
+        public Task<IReadOnlyList<KnownPatternReferenceDto>> GetReferenceSummariesByFingerprintsAsync(IReadOnlyCollection<string> fingerprints, CancellationToken cancellationToken = default)
+            => Task.FromResult<IReadOnlyList<KnownPatternReferenceDto>>(Array.Empty<KnownPatternReferenceDto>());
 
         public Task<IReadOnlyList<TopPatternItemDto>> GetTopPatternsAsync(ToolKind? toolKind, int limit, CancellationToken cancellationToken = default)
             => throw new NotSupportedException();

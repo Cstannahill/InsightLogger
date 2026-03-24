@@ -37,6 +37,7 @@ public sealed class EfCoreErrorPatternReadRepositoryTests : IAsyncLifetime
                 CanonicalMessage = "The name '{identifier}' does not exist in the current context",
                 ToolKind = ToolKind.DotNet.ToString(),
                 Category = DiagnosticCategory.MissingSymbol.ToString(),
+                DiagnosticCode = "CS0103",
                 FirstSeenAtUtc = new DateTimeOffset(2026, 03, 23, 10, 00, 00, TimeSpan.Zero),
                 LastSeenAtUtc = new DateTimeOffset(2026, 03, 24, 15, 21, 00, TimeSpan.Zero),
                 OccurrenceCount = 38,
@@ -49,6 +50,7 @@ public sealed class EfCoreErrorPatternReadRepositoryTests : IAsyncLifetime
                 CanonicalMessage = "Non-nullable property must contain a non-null value when exiting constructor",
                 ToolKind = ToolKind.DotNet.ToString(),
                 Category = DiagnosticCategory.NullableSafety.ToString(),
+                DiagnosticCode = "CS8618",
                 FirstSeenAtUtc = new DateTimeOffset(2026, 03, 23, 09, 30, 00, TimeSpan.Zero),
                 LastSeenAtUtc = new DateTimeOffset(2026, 03, 24, 12, 01, 00, TimeSpan.Zero),
                 OccurrenceCount = 21
@@ -60,6 +62,7 @@ public sealed class EfCoreErrorPatternReadRepositoryTests : IAsyncLifetime
                 CanonicalMessage = "name '{identifier}' is not defined",
                 ToolKind = ToolKind.Python.ToString(),
                 Category = DiagnosticCategory.MissingSymbol.ToString(),
+                DiagnosticCode = "NameError",
                 FirstSeenAtUtc = new DateTimeOffset(2026, 03, 22, 08, 00, 00, TimeSpan.Zero),
                 LastSeenAtUtc = new DateTimeOffset(2026, 03, 24, 11, 45, 00, TimeSpan.Zero),
                 OccurrenceCount = 8
@@ -86,7 +89,21 @@ public sealed class EfCoreErrorPatternReadRepositoryTests : IAsyncLifetime
         Assert.Equal(ToolKind.DotNet, result.ToolKind);
         Assert.Equal(DiagnosticCategory.MissingSymbol, result.Category);
         Assert.Equal(38, result.OccurrenceCount);
+        Assert.Equal("CS0103", result.DiagnosticCode);
         Assert.Contains("Check spelling of the symbol.", result.KnownFixes);
+    }
+
+
+    [Fact]
+    public async Task GetReferenceSummariesByFingerprintsAsync_ShouldReturnPatternSummaries()
+    {
+        var repository = new EfCoreErrorPatternReadRepository(_dbContext);
+
+        var result = await repository.GetReferenceSummariesByFingerprintsAsync(new[] { "fp_cs0103_name_missing", "fp_python_nameerror_not_defined" });
+
+        Assert.Equal(2, result.Count);
+        Assert.Equal("fp_cs0103_name_missing", result[0].Fingerprint);
+        Assert.Equal("CS0103", result[0].DiagnosticCode);
     }
 
     [Fact]

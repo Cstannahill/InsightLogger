@@ -12,10 +12,8 @@ using InsightLogger.Domain.Analyses;
 using InsightLogger.Domain.Diagnostics;
 using InsightLogger.ApiTests.Infrastructure;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Logging;
 using Xunit;
 
 namespace InsightLogger.ApiTests.Endpoints;
@@ -46,6 +44,7 @@ public sealed class AnalysisEndpointsTests : IClassFixture<ApiTestWebApplication
         Assert.Equal("validation_failed", payload!.Error.Code);
         Assert.Contains(payload.Error.Details!, detail => detail.Field == "content");
         Assert.True(response.Headers.Contains("X-Correlation-Id"));
+        Assert.True(response.Headers.Contains("X-Request-Id"));
     }
 
     [Fact]
@@ -103,14 +102,8 @@ public sealed class AnalysisEndpointsTests : IClassFixture<ApiTestWebApplication
 
     private sealed class ThrowingAnalysisWebApplicationFactory : WebApplicationFactory<Program>
     {
-        protected override void ConfigureWebHost(IWebHostBuilder builder)
+        protected override void ConfigureWebHost(Microsoft.AspNetCore.Hosting.IWebHostBuilder builder)
         {
-            builder.ConfigureLogging(logging =>
-            {
-                logging.AddFilter("InsightLogger.Api.Middleware.ApiExceptionHandlingMiddleware", LogLevel.None);
-                logging.AddFilter("Microsoft.EntityFrameworkCore.Database.Command", LogLevel.Warning);
-            });
-
             builder.ConfigureServices(services =>
             {
                 services.RemoveAll<IAnalysisService>();

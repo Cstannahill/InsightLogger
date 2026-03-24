@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using InsightLogger.Contracts.Common;
 
 namespace InsightLogger.Contracts.Analyses;
 
@@ -12,4 +13,5 @@ public sealed record AnalyzeCompilerErrorResponse(
     double Confidence,
     IReadOnlyList<MatchedRuleContract> MatchedRules,
     ProcessingMetadataContract? Processing,
+    IReadOnlyList<KnowledgeReferenceContract> KnowledgeReferences,
     IReadOnlyList<string>? Warnings = null);

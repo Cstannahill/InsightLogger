@@ -1,3 +1,6 @@
+using System.Collections.Generic;
+using InsightLogger.Contracts.Common;
+
 namespace InsightLogger.Contracts.Analyses;
 
 public sealed record GetAnalysisNarrativeResponse(
@@ -8,4 +11,5 @@ public sealed record GetAnalysisNarrativeResponse(
     AnalysisSummaryContract Summary,
     AnalysisNarrativeContract Narrative,
     string? ProjectName,
-    string? Repository);
+    string? Repository,
+    IReadOnlyList<KnowledgeReferenceContract> KnowledgeReferences);

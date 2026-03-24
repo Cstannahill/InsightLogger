@@ -4,5 +4,6 @@ public interface IAiRootCauseNarrativeGenerator
 {
     Task<AiRootCauseNarrativeResult> GenerateAsync(
         RootCauseNarrativeRequest request,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default
+    );
 }

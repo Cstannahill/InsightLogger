@@ -110,6 +110,7 @@ public sealed class EfCoreAnalysisReadRepositoryTests : IAsyncLifetime
             ProjectName: "InsightLogger.Api",
             Repository: "InsightLogger",
             RawContentHash: "hash_001",
+            RawContentRedacted: false,
             RawContent: null);
 
         _dbContext.Analyses.Add(new AnalysisEntity
@@ -198,6 +199,37 @@ public sealed class EfCoreAnalysisReadRepositoryTests : IAsyncLifetime
             }
         });
 
+        _dbContext.ErrorPatterns.Add(new ErrorPatternEntity
+        {
+            Fingerprint = "fp_cs0103_name_missing",
+            Title = "Unknown symbol in current context",
+            CanonicalMessage = "The name '{identifier}' does not exist in the current context",
+            ToolKind = "DotNet",
+            Category = "MissingSymbol",
+            DiagnosticCode = "CS0103",
+            FirstSeenAtUtc = new DateTimeOffset(2026, 03, 23, 9, 0, 0, TimeSpan.Zero),
+            LastSeenAtUtc = new DateTimeOffset(2026, 03, 24, 9, 0, 0, TimeSpan.Zero),
+            OccurrenceCount = 2
+        });
+
+        _dbContext.PatternOccurrences.Add(new PatternOccurrenceEntity
+        {
+            Id = "po_001",
+            Fingerprint = "fp_cs0103_name_missing",
+            AnalysisId = "anl_001",
+            DiagnosticId = "diag_001",
+            SeenAtUtc = new DateTimeOffset(2026, 03, 24, 9, 0, 0, TimeSpan.Zero)
+        });
+
+        _dbContext.PatternOccurrences.Add(new PatternOccurrenceEntity
+        {
+            Id = "po_002",
+            Fingerprint = "fp_cs0103_name_missing",
+            AnalysisId = "anl_legacy",
+            DiagnosticId = "diag_legacy",
+            SeenAtUtc = new DateTimeOffset(2026, 03, 24, 8, 0, 0, TimeSpan.Zero)
+        });
+
         await _dbContext.SaveChangesAsync();
     }
 
@@ -222,6 +254,24 @@ public sealed class EfCoreAnalysisReadRepositoryTests : IAsyncLifetime
         result.Context.Should().ContainKey("projectName");
     }
 
+
+    [Fact]
+    public async Task GetRecentRelatedAnalysesAsync_ShouldReturnPriorAnalysesForMatchingFingerprints()
+    {
+        var repository = new EfCoreAnalysisReadRepository(_dbContext);
+
+        var result = await repository.GetRecentRelatedAnalysesAsync(
+            fingerprints: new[] { "fp_cs0103_name_missing" },
+            excludeAnalysisId: "anl_001",
+            projectName: null,
+            repository: null,
+            limit: 10);
+
+        result.Should().ContainSingle();
+        result[0].AnalysisId.Should().Be("anl_legacy");
+        result[0].MatchingFingerprints.Should().Contain("fp_cs0103_name_missing");
+    }
+
     [Fact]
     public async Task GetByAnalysisIdAsync_ShouldFallbackToNormalizedRows_WhenSnapshotMissing()
     {
@@ -237,3 +287,5 @@ public sealed class EfCoreAnalysisReadRepositoryTests : IAsyncLifetime
         result.ProjectName.Should().Be("Legacy.Project");
     }
 }
+
+

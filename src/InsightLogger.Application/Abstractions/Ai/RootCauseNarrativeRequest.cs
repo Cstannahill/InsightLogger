@@ -13,4 +13,5 @@ public sealed record RootCauseNarrativeRequest(
     IReadOnlyList<string> DeterministicNextSteps,
     string DeterministicSummary,
     IReadOnlyDictionary<string, string>? Context = null,
-    string? CorrelationId = null);
+    string? CorrelationId = null
+);

@@ -1,5 +1,7 @@
+using InsightLogger.Application.Abstractions.Knowledge;
 using InsightLogger.Application.Diagnostics.DTOs;
 using InsightLogger.Application.Patterns.DTOs;
+using InsightLogger.Contracts.Common;
 using InsightLogger.Contracts.Diagnostics;
 using InsightLogger.Contracts.Patterns;
 using InsightLogger.Domain.Diagnostics;
@@ -19,6 +21,7 @@ public static class PatternContractMapper
             OccurrenceCount: dto.OccurrenceCount,
             FirstSeenAt: dto.FirstSeenAtUtc,
             LastSeenAt: dto.LastSeenAtUtc,
+            DiagnosticCode: dto.DiagnosticCode,
             KnownFixes: dto.KnownFixes,
             RelatedRules: dto.RelatedRules
                 .Select(static rule => new RelatedRuleSummaryContract(
@@ -29,6 +32,9 @@ public static class PatternContractMapper
                     rule.LastMatchedAtUtc,
                     rule.ProjectName,
                     rule.Repository))
+                .ToArray(),
+            KnowledgeReferences: (dto.KnowledgeReferences ?? Array.Empty<KnowledgeReference>())
+                .Select(ToContract)
                 .ToArray());
     }
 
@@ -48,6 +54,18 @@ public static class PatternContractMapper
             OccurrenceCount: dto.OccurrenceCount,
             LastSeenAt: dto.LastSeenAtUtc);
     }
+
+    private static KnowledgeReferenceContract ToContract(KnowledgeReference reference)
+        => new(
+            Id: reference.Id,
+            Kind: reference.Kind,
+            Source: reference.Source,
+            Title: reference.Title,
+            Summary: reference.Summary,
+            Url: reference.Url,
+            ResourceType: reference.ResourceType,
+            ResourceId: reference.ResourceId,
+            Tags: reference.Tags);
 
     private static string ToToolContract(ToolKind toolKind)
     {

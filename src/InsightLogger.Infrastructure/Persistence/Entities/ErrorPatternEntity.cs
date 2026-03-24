@@ -9,6 +9,7 @@ public sealed class ErrorPatternEntity
     public string CanonicalMessage { get; set; } = null!;
     public string ToolKind { get; set; } = null!;
     public string Category { get; set; } = null!;
+    public string? DiagnosticCode { get; set; }
     public DateTimeOffset FirstSeenAtUtc { get; set; }
     public DateTimeOffset LastSeenAtUtc { get; set; }
     public int OccurrenceCount { get; set; }

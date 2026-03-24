@@ -112,7 +112,18 @@ public sealed class AnalysisContractMapperTests
                 groupSummaries: new[] { "Unknown symbol cluster." },
                 recommendedNextSteps: new[] { "Fix the first error." }),
             ProjectName: "InsightLogger.Api",
-            Repository: "InsightLogger");
+            Repository: "InsightLogger",
+            KnowledgeReferences: new[]
+            {
+                new InsightLogger.Application.Abstractions.Knowledge.KnowledgeReference(
+                    id: "official:dotnet:CS0103",
+                    kind: "official-doc",
+                    source: "official",
+                    title: "Compiler Error CS0103",
+                    summary: "Docs.",
+                    url: "https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/compiler-messages/cs0103",
+                    tags: new[] { "dotnet", "CS0103" })
+            });
 
         var historyItems = new[]
         {
@@ -140,6 +151,7 @@ public sealed class AnalysisContractMapperTests
         Assert.Equal("build-log", detail.InputType);
         Assert.Equal("dotnet", detail.ToolDetected);
         Assert.Equal("InsightLogger.Api", detail.ProjectName);
+        Assert.Single(detail.KnowledgeReferences);
         Assert.Equal("deterministic", history.Items[0].Source);
         Assert.Contains("summary", history.Items[0].MatchedFields);
         Assert.NotNull(history.Items[0].MatchSnippet);
@@ -179,7 +191,20 @@ public sealed class AnalysisContractMapperTests
             ProjectName: "InsightLogger.Api",
             Repository: "InsightLogger",
             RawContentHash: "hash_123",
-            RawContent: null);
+            RawContentRedacted: false,
+            RawContent: null,
+            KnowledgeReferences: new[]
+            {
+                new InsightLogger.Application.Abstractions.Knowledge.KnowledgeReference(
+                    id: "internal:pattern:fp_cs0103_name_missing",
+                    kind: "recurring-pattern",
+                    source: "internal",
+                    title: "Known recurring pattern",
+                    summary: "Observed before.",
+                    resourceType: "error-pattern",
+                    resourceId: "fp_cs0103_name_missing",
+                    tags: new[] { "dotnet", "CS0103" })
+            });
 
         var contract = AnalysisContractMapper.ToContract(dto);
 
@@ -192,8 +217,10 @@ public sealed class AnalysisContractMapperTests
         Assert.Single(contract.MatchedRules);
         Assert.Equal("hash_123", contract.RawContentHash);
         Assert.False(contract.RawContentStored);
+        Assert.False(contract.RawContentRedacted);
         Assert.NotNull(contract.Context);
         Assert.Equal("InsightLogger.Api", contract.ProjectName);
+        Assert.Single(contract.KnowledgeReferences);
     }
 
     [Fact]
@@ -210,6 +237,7 @@ public sealed class AnalysisContractMapperTests
         Assert.NotEmpty(response.LikelyCauses);
         Assert.NotEmpty(response.SuggestedFixes);
         Assert.Equal("Typo in variable or member name", response.LikelyCauses[0]);
+        Assert.NotNull(response.KnowledgeReferences);
     }
 
     [Fact]
@@ -229,7 +257,8 @@ public sealed class AnalysisContractMapperTests
                 IncludeRawDiagnostics: true,
                 IncludeGroups: true,
                 IncludeProcessingMetadata: true,
-                UseAiRootCauseNarrative: true));
+                UseAiRootCauseNarrative: true,
+                PersistRawContent: true));
 
         var command = AnalysisContractMapper.ToCommand(request, "corr_demo_001");
 
@@ -240,6 +269,7 @@ public sealed class AnalysisContractMapperTests
         Assert.Equal("false", command.Context["environment.ci"]);
         Assert.True(command.UseAiEnrichment);
         Assert.True(command.UseAiRootCauseNarrative);
+        Assert.True(command.StoreRawContentWhenPersisting);
     }
 
     private static AnalysisResult CreateAnalysisResult()
@@ -362,3 +392,6 @@ public sealed class AnalysisContractMapperTests
             processing: new ProcessingMetadata(false, 12, "dotnet-diagnostic-parser-v1", "corr_demo_001", 1.0, 0.98, 0, null));
     }
 }
+
+
+

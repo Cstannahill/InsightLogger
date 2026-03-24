@@ -41,4 +41,19 @@ public sealed class AnalysisRequestValidatorTests
 
         Assert.Empty(errors);
     }
+
+    [Fact]
+    public void Validate_ShouldRejectPersistRawContent_WhenPersistIsFalse()
+    {
+        var request = new AnalyzeBuildLogRequest(
+            Tool: "dotnet",
+            Content: "Program.cs(14,9): error CS0103: The name 'builderz' does not exist in the current context",
+            Options: new AnalyzeRequestOptionsContract(
+                Persist: false,
+                PersistRawContent: true));
+
+        var errors = AnalysisRequestValidator.Validate(request);
+
+        Assert.Contains(errors, e => e.Field == "options.persistRawContent");
+    }
 }

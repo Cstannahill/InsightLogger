@@ -13,7 +13,8 @@ public sealed record AiExplanationEnrichmentResult(
     string? Model,
     string Status,
     bool FallbackUsed,
-    string? Reason)
+    string? Reason
+)
 {
     public static AiExplanationEnrichmentResult Successful(
         string explanation,
@@ -21,8 +22,9 @@ public sealed record AiExplanationEnrichmentResult(
         IReadOnlyList<string>? suggestedFixes,
         string provider,
         string model,
-        bool fallbackUsed = false)
-        => new(
+        bool fallbackUsed = false
+    ) =>
+        new(
             Success: true,
             Explanation: explanation,
             LikelyCauses: NormalizeItems(likelyCauses),
@@ -31,15 +33,17 @@ public sealed record AiExplanationEnrichmentResult(
             Model: model,
             Status: "completed",
             FallbackUsed: fallbackUsed,
-            Reason: null);
+            Reason: null
+        );
 
     public static AiExplanationEnrichmentResult Failure(
         string status,
         string? reason,
         string? provider = null,
         string? model = null,
-        bool fallbackUsed = false)
-        => new(
+        bool fallbackUsed = false
+    ) =>
+        new(
             Success: false,
             Explanation: null,
             LikelyCauses: Array.Empty<string>(),
@@ -48,7 +52,8 @@ public sealed record AiExplanationEnrichmentResult(
             Model: model,
             Status: status,
             FallbackUsed: fallbackUsed,
-            Reason: reason);
+            Reason: reason
+        );
 
     private static IReadOnlyList<string> NormalizeItems(IReadOnlyList<string>? values)
     {

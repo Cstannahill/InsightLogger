@@ -23,4 +23,5 @@ public sealed record AnalysisPersistenceRequest(
     string? Repository,
     string RawContentHash,
     string? RawContent,
+    bool RawContentRedacted,
     DateTimeOffset CreatedAtUtc);

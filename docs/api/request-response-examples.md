@@ -783,9 +783,88 @@ GET /health
 }
 ```
 
+
 ---
 
-## Example 15: AI Provider Health Summary
+## Example 15: Telemetry Snapshot
+
+### Request
+
+```http
+GET /health/telemetry
+```
+
+### Response
+
+```json
+{
+  "enabled": true,
+  "service": "InsightLogger.Api",
+  "generatedAtUtc": "2026-03-24T08:30:00Z",
+  "analysis": {
+    "totalRequests": 14,
+    "completed": 14,
+    "failed": 0,
+    "parseFailures": 2,
+    "aiRequested": 3,
+    "aiCompleted": 1,
+    "persistenceFailures": 0,
+    "unmatchedAnalyses": 2,
+    "averageDurationMs": 17.4,
+    "averageDiagnosticsPerAnalysis": 2.8,
+    "aiRequestRate": 0.2143,
+    "unmatchedAnalysisRate": 0.1429,
+    "toolSelections": [
+      {
+        "name": "DotNet",
+        "count": 8
+      }
+    ],
+    "parserSelections": [
+      {
+        "name": "dotnet-diagnostic-parser-v1",
+        "count": 8
+      }
+    ],
+    "topFingerprints": [
+      {
+        "fingerprint": "fp_cs0103_name_missing",
+        "count": 5
+      }
+    ]
+  },
+  "http": {
+    "totalRequests": 29,
+    "averageDurationMs": 6.9,
+    "methods": [
+      {
+        "name": "GET",
+        "count": 20
+      },
+      {
+        "name": "POST",
+        "count": 9
+      }
+    ],
+    "statusCodes": [
+      {
+        "name": "200",
+        "count": 28
+      }
+    ],
+    "routes": [
+      {
+        "name": "/health/telemetry",
+        "count": 4
+      }
+    ]
+  }
+}
+```
+
+---
+
+## Example 16: AI Provider Health Summary
 
 ### Request
 
@@ -817,7 +896,7 @@ GET /health/ai
 
 ---
 
-## Example 16: AI Provider Catalog
+## Example 17: AI Provider Catalog
 
 ### Request
 
@@ -1161,6 +1240,65 @@ GET /analyses/anl_01HXYZ004
   "repository": "InsightLogger",
   "rawContentHash": "9b6f5f7d0d6d9f6bcf9e6e9f9e8d1234567890abcdef1234567890abcdef1234",
   "rawContentStored": false,
+  "rawContentRedacted": false,
   "rawContent": null
 }
 ```
+
+
+## Persist a build log with redacted raw-content storage
+
+### Request
+
+```json
+{
+  "tool": "dotnet",
+  "content": "Program.cs(14,9): error CS0103: The name 'builderz' does not exist in the current context. token=abc123 contact dev@example.com see https://example.com and C:\\src\\Program.cs",
+  "options": {
+    "persist": true,
+    "persistRawContent": true
+  }
+}
+```
+
+## Privacy settings
+
+### Request
+
+```http
+GET /privacy/settings
+```
+
+### Response
+
+```json
+{
+  "rawContentStorageEnabled": true,
+  "redactRawContentOnWrite": true,
+  "rawContentRetentionDays": 7,
+  "analysisRetentionDays": 90
+}
+```
+
+## Retention apply
+
+### Request
+
+```http
+POST /privacy/retention/apply
+```
+
+### Response
+
+```json
+{
+  "appliedAtUtc": "2026-03-24T10:30:00Z",
+  "rawContentRetentionDays": 7,
+  "analysisRetentionDays": 90,
+  "rawContentCutoffUtc": "2026-03-17T10:30:00Z",
+  "analysisCutoffUtc": "2025-12-24T10:30:00Z",
+  "rawContentPurgedCount": 12,
+  "analysesDeletedCount": 3
+}
+```
+

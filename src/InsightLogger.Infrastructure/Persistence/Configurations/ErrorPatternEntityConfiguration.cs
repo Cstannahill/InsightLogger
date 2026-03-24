@@ -17,6 +17,7 @@ public sealed class ErrorPatternEntityConfiguration : IEntityTypeConfiguration<E
         builder.Property(x => x.CanonicalMessage).HasColumnType("TEXT").IsRequired();
         builder.Property(x => x.ToolKind).HasMaxLength(32).IsRequired();
         builder.Property(x => x.Category).HasMaxLength(64).IsRequired();
+        builder.Property(x => x.DiagnosticCode).HasMaxLength(64);
         builder.Property(x => x.LastSuggestedFix).HasColumnType("TEXT");
 
         builder.HasIndex(x => x.LastSeenAtUtc);

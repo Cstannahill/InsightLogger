@@ -3,7 +3,9 @@ using InsightLogger.Application.Analyses.Queries;
 using InsightLogger.Application.Analyses.Services;
 using InsightLogger.Application.Diagnostics.Queries;
 using InsightLogger.Application.Patterns.Queries;
+using InsightLogger.Application.Privacy.Services;
 using InsightLogger.Application.Rules.Services;
+using InsightLogger.Application.Telemetry.Queries;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace InsightLogger.Application.DependencyInjection;
@@ -21,10 +23,15 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IAnalysisNarrativeQueryService, AnalysisNarrativeQueryService>();
 
         services.AddScoped<IAiMetadataQueryService, AiMetadataQueryService>();
+        services.AddScoped<ITelemetryQueryService, TelemetryQueryService>();
         services.AddScoped<IErrorFingerprintQueryService, ErrorFingerprintQueryService>();
         services.AddScoped<IPatternQueryService, PatternQueryService>();
         services.AddScoped<IRuleService, RuleService>();
+        services.AddScoped<IPrivacyControlService, PrivacyControlService>();
 
         return services;
     }
 }
+
+
+

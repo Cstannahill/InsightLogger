@@ -61,6 +61,7 @@ public sealed class EfCoreAnalysisPersistenceRepository : IAnalysisPersistenceRe
             Repository = request.Repository,
             RawContentHash = request.RawContentHash,
             RawContent = request.RawContent,
+            RawContentRedacted = request.RawContentRedacted,
             ContextJson = request.Context is null ? null : JsonSerializer.Serialize(request.Context, JsonOptions),
             AnalysisSnapshotJson = JsonSerializer.Serialize(AnalysisPersistenceService.BuildPersistedAnalysisDto(request), JsonOptions),
             CreatedAtUtc = request.CreatedAtUtc
@@ -132,3 +133,5 @@ public sealed class EfCoreAnalysisPersistenceRepository : IAnalysisPersistenceRe
             ? null
             : JsonSerializer.Serialize(items, JsonOptions);
 }
+
+

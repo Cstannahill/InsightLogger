@@ -33,10 +33,11 @@ public sealed class PatternEndpointsOpenApiTests : IClassFixture<WebApplicationF
         paths.TryGetProperty("/errors/{fingerprint}", out var errorLookupPath).Should().BeTrue();
         paths.TryGetProperty("/patterns/top", out var topPatternsPath).Should().BeTrue();
 
-        schemas.TryGetProperty("GetErrorByFingerprintResponse", out _).Should().BeTrue();
+        schemas.TryGetProperty("GetErrorByFingerprintResponse", out var errorLookupSchema).Should().BeTrue();
         schemas.TryGetProperty("GetTopPatternsResponse", out _).Should().BeTrue();
         schemas.TryGetProperty("TopPatternItemContract", out _).Should().BeTrue();
         schemas.TryGetProperty("RelatedRuleSummaryContract", out var relatedRuleSchema).Should().BeTrue();
+        schemas.TryGetProperty("KnowledgeReferenceContract", out _).Should().BeTrue();
         schemas.TryGetProperty("ApiErrorResponse", out _).Should().BeTrue();
 
         var relatedRuleProperties = relatedRuleSchema.GetProperty("properties");
@@ -45,6 +46,10 @@ public sealed class PatternEndpointsOpenApiTests : IClassFixture<WebApplicationF
         relatedRuleProperties.TryGetProperty("lastMatchedAt", out _).Should().BeTrue();
         relatedRuleProperties.TryGetProperty("projectName", out _).Should().BeTrue();
         relatedRuleProperties.TryGetProperty("repository", out _).Should().BeTrue();
+
+        var errorLookupProperties = errorLookupSchema.GetProperty("properties");
+        errorLookupProperties.TryGetProperty("diagnosticCode", out _).Should().BeTrue();
+        errorLookupProperties.TryGetProperty("knowledgeReferences", out _).Should().BeTrue();
 
         var errorLookupResponses = errorLookupPath.GetProperty("get").GetProperty("responses");
         errorLookupResponses.TryGetProperty("200", out _).Should().BeTrue();

@@ -8,4 +8,5 @@ public sealed record AiProviderDefinition(
     string? BaseUrl,
     bool RequiresApiKey,
     bool HasApiKey,
-    AiProviderCapabilities Capabilities);
+    AiProviderCapabilities Capabilities
+);

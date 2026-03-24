@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using InsightLogger.Contracts.Common;
 
 namespace InsightLogger.Contracts.Analyses;
 
@@ -12,4 +13,5 @@ public sealed record AnalyzeBuildLogResponse(
     IReadOnlyList<MatchedRuleContract> MatchedRules,
     AnalysisNarrativeContract? Narrative,
     ProcessingMetadataContract? Processing,
+    IReadOnlyList<KnowledgeReferenceContract> KnowledgeReferences,
     IReadOnlyList<string>? Warnings = null);

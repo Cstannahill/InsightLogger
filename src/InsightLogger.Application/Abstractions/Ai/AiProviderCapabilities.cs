@@ -5,4 +5,5 @@ public sealed record AiProviderCapabilities(
     bool SupportsToolCalling,
     bool SupportsJsonMode,
     bool SupportsOpenAiCompatibility,
-    bool IsLocal);
+    bool IsLocal
+);

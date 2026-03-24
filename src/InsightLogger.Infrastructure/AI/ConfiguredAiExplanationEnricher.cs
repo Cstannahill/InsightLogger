@@ -7,6 +7,9 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using InsightLogger.Application.Abstractions.Ai;
+using InsightLogger.Application.Logging;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
 namespace InsightLogger.Infrastructure.Ai;
@@ -19,17 +22,20 @@ public sealed class ConfiguredAiExplanationEnricher : IAiExplanationEnricher
     private readonly IAiProviderCatalog _providerCatalog;
     private readonly IAiProviderHealthService _providerHealthService;
     private readonly IOptionsMonitor<AiOptions> _optionsMonitor;
+    private readonly ILogger<ConfiguredAiExplanationEnricher> _logger;
 
     public ConfiguredAiExplanationEnricher(
         IHttpClientFactory httpClientFactory,
         IAiProviderCatalog providerCatalog,
         IAiProviderHealthService providerHealthService,
-        IOptionsMonitor<AiOptions> optionsMonitor)
+        IOptionsMonitor<AiOptions> optionsMonitor,
+        ILogger<ConfiguredAiExplanationEnricher>? logger = null)
     {
         _httpClientFactory = httpClientFactory;
         _providerCatalog = providerCatalog;
         _providerHealthService = providerHealthService;
         _optionsMonitor = optionsMonitor;
+        _logger = logger ?? NullLogger<ConfiguredAiExplanationEnricher>.Instance;
     }
 
     public async Task<AiExplanationEnrichmentResult> EnrichAsync(
@@ -43,6 +49,8 @@ public sealed class ConfiguredAiExplanationEnricher : IAiExplanationEnricher
 
         if (!options.Enabled)
         {
+            _logger.LogInformation("Skipping AI explanation enrichment because the AI subsystem is disabled. CorrelationId={CorrelationId}.", request.CorrelationId);
+
             return AiExplanationEnrichmentResult.Failure(
                 status: "disabled",
                 reason: "AI subsystem is disabled.");
@@ -50,6 +58,8 @@ public sealed class ConfiguredAiExplanationEnricher : IAiExplanationEnricher
 
         if (!feature.Enabled)
         {
+            _logger.LogInformation("Skipping AI explanation enrichment because the feature is disabled. CorrelationId={CorrelationId}.", request.CorrelationId);
+
             return AiExplanationEnrichmentResult.Failure(
                 status: "disabled",
                 reason: "Explanation enrichment is disabled.");
@@ -61,6 +71,12 @@ public sealed class ConfiguredAiExplanationEnricher : IAiExplanationEnricher
 
         if (route is null)
         {
+            _logger.LogWarning(
+                "AI explanation enrichment is unavailable because no healthy provider route could be resolved. PreferredProvider={PreferredProvider} RequestedModel={RequestedModel} CorrelationId={CorrelationId}.",
+                feature.Provider ?? options.DefaultProvider,
+                feature.Model,
+                request.CorrelationId);
+
             return AiExplanationEnrichmentResult.Failure(
                 status: "unavailable",
                 reason: "No healthy AI provider is configured for explanation enrichment.",
@@ -70,6 +86,14 @@ public sealed class ConfiguredAiExplanationEnricher : IAiExplanationEnricher
 
         if (!IsSupported(route.Provider))
         {
+            _logger.LogWarning(
+                "AI explanation enrichment provider type is not supported. Provider={Provider} ProviderType={ProviderType} Model={Model} FallbackUsed={FallbackUsed} CorrelationId={CorrelationId}.",
+                route.Provider.Name,
+                route.Provider.Type,
+                route.Model,
+                route.FallbackUsed,
+                request.CorrelationId);
+
             return AiExplanationEnrichmentResult.Failure(
                 status: "unavailable",
                 reason: "The selected AI provider type is not supported for explanation enrichment yet.",
@@ -80,6 +104,16 @@ public sealed class ConfiguredAiExplanationEnricher : IAiExplanationEnricher
 
         try
         {
+            _logger.LogInformation(
+                "Starting AI explanation enrichment. Provider={Provider} ProviderType={ProviderType} Model={Model} FallbackUsed={FallbackUsed} Tool={Tool} DiagnosticCode={DiagnosticCode} CorrelationId={CorrelationId}.",
+                route.Provider.Name,
+                route.Provider.Type,
+                route.Model,
+                route.FallbackUsed,
+                request.Tool,
+                request.DiagnosticCode,
+                request.CorrelationId);
+
             var rawOutput = route.Provider.Type.Equals("Ollama", StringComparison.OrdinalIgnoreCase)
                 ? await GenerateWithOllamaAsync(route.Provider, route.Model, feature, request, cancellationToken)
                 : await GenerateWithOpenAiCompatibleAsync(route.Provider, route.Model, feature, request, cancellationToken);
@@ -87,6 +121,12 @@ public sealed class ConfiguredAiExplanationEnricher : IAiExplanationEnricher
             var parsed = ExtractEnrichmentPayload(rawOutput);
             if (string.IsNullOrWhiteSpace(parsed.Explanation))
             {
+                _logger.LogWarning(
+                    "AI explanation enrichment returned an empty explanation. Provider={Provider} Model={Model} CorrelationId={CorrelationId}.",
+                    route.Provider.Name,
+                    route.Model,
+                    request.CorrelationId);
+
                 return AiExplanationEnrichmentResult.Failure(
                     status: "degraded",
                     reason: "AI provider returned an empty explanation.",
@@ -94,6 +134,14 @@ public sealed class ConfiguredAiExplanationEnricher : IAiExplanationEnricher
                     model: route.Model,
                     fallbackUsed: route.FallbackUsed);
             }
+
+            _logger.LogInformation(
+                "AI explanation enrichment completed successfully. Provider={Provider} Model={Model} SuggestedFixCount={SuggestedFixCount} LikelyCauseCount={LikelyCauseCount} CorrelationId={CorrelationId}.",
+                route.Provider.Name,
+                route.Model,
+                parsed.SuggestedFixes.Count,
+                parsed.LikelyCauses.Count,
+                request.CorrelationId);
 
             return AiExplanationEnrichmentResult.Successful(
                 explanation: parsed.Explanation,
@@ -105,6 +153,13 @@ public sealed class ConfiguredAiExplanationEnricher : IAiExplanationEnricher
         }
         catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
+            _logger.LogWarning(
+                "AI explanation enrichment timed out. Provider={Provider} Model={Model} TimeoutSeconds={TimeoutSeconds} CorrelationId={CorrelationId}.",
+                route.Provider.Name,
+                route.Model,
+                feature.TimeoutSeconds,
+                request.CorrelationId);
+
             return AiExplanationEnrichmentResult.Failure(
                 status: "degraded",
                 reason: "AI explanation enrichment timed out.",
@@ -114,18 +169,32 @@ public sealed class ConfiguredAiExplanationEnricher : IAiExplanationEnricher
         }
         catch (HttpRequestException ex)
         {
+            _logger.LogWarning(
+                "AI explanation enrichment request failed. Provider={Provider} Model={Model} CorrelationId={CorrelationId} ExceptionMessage={ExceptionMessage}.",
+                route.Provider.Name,
+                route.Model,
+                request.CorrelationId,
+                LogRedactor.Redact(ex.Message));
+
             return AiExplanationEnrichmentResult.Failure(
                 status: "degraded",
-                reason: $"AI request failed: {ex.Message}",
+                reason: $"AI request failed: {LogRedactor.Redact(ex.Message)}",
                 provider: route.Provider.Name,
                 model: route.Model,
                 fallbackUsed: route.FallbackUsed);
         }
         catch (JsonException ex)
         {
+            _logger.LogWarning(
+                "AI explanation enrichment response parsing failed. Provider={Provider} Model={Model} CorrelationId={CorrelationId} ExceptionMessage={ExceptionMessage}.",
+                route.Provider.Name,
+                route.Model,
+                request.CorrelationId,
+                LogRedactor.Redact(ex.Message));
+
             return AiExplanationEnrichmentResult.Failure(
                 status: "degraded",
-                reason: $"AI response parsing failed: {ex.Message}",
+                reason: $"AI response parsing failed: {LogRedactor.Redact(ex.Message)}",
                 provider: route.Provider.Name,
                 model: route.Model,
                 fallbackUsed: route.FallbackUsed);
@@ -503,4 +572,3 @@ public sealed class ConfiguredAiExplanationEnricher : IAiExplanationEnricher
         public static readonly ParsedEnrichmentPayload Empty = new(string.Empty, Array.Empty<string>(), Array.Empty<string>());
     }
 }
-

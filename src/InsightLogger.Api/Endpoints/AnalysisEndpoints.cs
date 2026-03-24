@@ -7,6 +7,7 @@ using InsightLogger.Api.Filters;
 using InsightLogger.Api.Mapping;
 using InsightLogger.Application.Analyses.Queries;
 using InsightLogger.Application.Analyses.Services;
+using InsightLogger.Application.Privacy.Services;
 using InsightLogger.Contracts.Analyses;
 using InsightLogger.Contracts.Common;
 using InsightLogger.Domain.Diagnostics;
@@ -67,6 +68,22 @@ public static class AnalysisEndpoints
             .Produces<ApiErrorResponse>(StatusCodes.Status404NotFound)
             .Produces<ApiErrorResponse>(StatusCodes.Status500InternalServerError)
             .WithSummary("Get a persisted grouped diagnostic narrative by analysis id.");
+
+        analysesGroup.MapDelete("/{analysisId}/raw-content", HandleDeleteRawContent)
+            .WithName("DeleteAnalysisRawContent")
+            .Produces(StatusCodes.Status204NoContent)
+            .Produces<ApiErrorResponse>(StatusCodes.Status400BadRequest)
+            .Produces<ApiErrorResponse>(StatusCodes.Status404NotFound)
+            .Produces<ApiErrorResponse>(StatusCodes.Status500InternalServerError)
+            .WithSummary("Purge stored raw content for one persisted analysis.");
+
+        analysesGroup.MapDelete("/{analysisId}", HandleDeleteAnalysis)
+            .WithName("DeleteAnalysis")
+            .Produces(StatusCodes.Status204NoContent)
+            .Produces<ApiErrorResponse>(StatusCodes.Status400BadRequest)
+            .Produces<ApiErrorResponse>(StatusCodes.Status404NotFound)
+            .Produces<ApiErrorResponse>(StatusCodes.Status500InternalServerError)
+            .WithSummary("Delete one persisted analysis and its related history rows.");
 
         return endpoints;
     }
@@ -217,6 +234,60 @@ public static class AnalysisEndpoints
         }
 
         return TypedResults.Ok(AnalysisContractMapper.ToContract(result));
+    }
+
+    private static async Task<IResult> HandleDeleteRawContent(
+        string analysisId,
+        HttpContext httpContext,
+        IPrivacyControlService privacyControlService,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(analysisId))
+        {
+            return TypedResults.BadRequest(CreateError(
+                code: "validation_failed",
+                message: "Analysis id is required.",
+                correlationId: ResolveCorrelationId(httpContext),
+                details: [new ValidationErrorDetail("analysisId", "Analysis id is required.")]));
+        }
+
+        var deleted = await privacyControlService.PurgeRawContentAsync(analysisId, cancellationToken);
+        if (deleted)
+        {
+            return TypedResults.NoContent();
+        }
+
+        return TypedResults.NotFound(CreateError(
+            code: "not_found",
+            message: $"No stored raw content exists for analysis '{analysisId}'.",
+            correlationId: ResolveCorrelationId(httpContext)));
+    }
+
+    private static async Task<IResult> HandleDeleteAnalysis(
+        string analysisId,
+        HttpContext httpContext,
+        IPrivacyControlService privacyControlService,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(analysisId))
+        {
+            return TypedResults.BadRequest(CreateError(
+                code: "validation_failed",
+                message: "Analysis id is required.",
+                correlationId: ResolveCorrelationId(httpContext),
+                details: [new ValidationErrorDetail("analysisId", "Analysis id is required.")]));
+        }
+
+        var deleted = await privacyControlService.DeleteAnalysisAsync(analysisId, cancellationToken);
+        if (deleted)
+        {
+            return TypedResults.NoContent();
+        }
+
+        return TypedResults.NotFound(CreateError(
+            code: "not_found",
+            message: $"No persisted analysis exists for analysis '{analysisId}'.",
+            correlationId: ResolveCorrelationId(httpContext)));
     }
 
     private static ApiErrorResponse CreateError(
