@@ -17,15 +17,23 @@ public sealed class AiMetadataQueryServiceTests
                     Name: "ollama",
                     Type: "Ollama",
                     Enabled: true,
-                    DefaultModel: "qwen3:8b",
+                    DefaultModel: "qwen3.5:latest",
                     BaseUrl: "http://localhost:11434",
                     RequiresApiKey: false,
                     HasApiKey: false,
-                    Capabilities: new AiProviderCapabilities(true, true, true, false, true))
-            ]);
+                    Capabilities: new AiProviderCapabilities(true, true, true, false, true)
+                ),
+            ]
+        );
 
-        var healthService = new FakeAiProviderHealthService(
-            [new AiProviderHealthStatus("ollama", "healthy", "qwen3:8b", "Configuration is ready.")]);
+        var healthService = new FakeAiProviderHealthService([
+            new AiProviderHealthStatus(
+                "ollama",
+                "healthy",
+                "qwen3.5:latest",
+                "Configuration is ready."
+            ),
+        ]);
 
         var service = new AiMetadataQueryService(catalog, healthService);
         var result = await service.GetHealthAsync();
@@ -47,14 +55,19 @@ public sealed class AiMetadataQueryServiceTests
                     Name: "openrouter",
                     Type: "OpenRouter",
                     Enabled: true,
-                    DefaultModel: "openai/gpt-5-mini",
+                    DefaultModel: "stepfun/step-3.5-flash:free",
                     BaseUrl: "https://openrouter.ai/api/v1",
                     RequiresApiKey: true,
                     HasApiKey: true,
-                    Capabilities: new AiProviderCapabilities(true, true, true, true, false))
-            ]);
+                    Capabilities: new AiProviderCapabilities(true, true, true, true, false)
+                ),
+            ]
+        );
 
-        var service = new AiMetadataQueryService(catalog, new FakeAiProviderHealthService(Array.Empty<AiProviderHealthStatus>()));
+        var service = new AiMetadataQueryService(
+            catalog,
+            new FakeAiProviderHealthService(Array.Empty<AiProviderHealthStatus>())
+        );
         var result = await service.GetProvidersAsync();
 
         result.Items.Should().ContainSingle();
@@ -79,7 +92,9 @@ public sealed class AiMetadataQueryServiceTests
             return Task.FromResult(_enabled);
         }
 
-        public Task<IReadOnlyList<AiProviderDefinition>> GetProvidersAsync(CancellationToken cancellationToken = default)
+        public Task<IReadOnlyList<AiProviderDefinition>> GetProvidersAsync(
+            CancellationToken cancellationToken = default
+        )
         {
             return Task.FromResult(_providers);
         }
@@ -94,7 +109,9 @@ public sealed class AiMetadataQueryServiceTests
             _statuses = statuses;
         }
 
-        public Task<IReadOnlyList<AiProviderHealthStatus>> GetProviderHealthAsync(CancellationToken cancellationToken = default)
+        public Task<IReadOnlyList<AiProviderHealthStatus>> GetProviderHealthAsync(
+            CancellationToken cancellationToken = default
+        )
         {
             return Task.FromResult(_statuses);
         }

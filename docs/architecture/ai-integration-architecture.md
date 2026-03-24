@@ -86,23 +86,29 @@ InsightLogger.Infrastructure.AI
 ## Architectural Principles
 
 ### Internal normalization first
+
 The system should define one internal AI request/response model and adapt vendors into it.
 
 ### Provider-specific features are optional extensions
+
 A provider may support tool-calling, JSON mode, or streaming. The application should be able to query capabilities rather than assume them.
 
 ### Local and cloud are equal citizens
+
 Ollama/local inference must not be treated as a second-class implementation.
 
 ### Routing belongs in infrastructure
+
 The application layer should request an AI capability or task, not manually encode provider-specific routing behavior.
 
 ### Safe degradation
+
 If AI fails, deterministic analysis should still succeed whenever possible.
 
 ## Provider Taxonomy
 
 ### Tier 1: First-class providers
+
 These should have dedicated adapters and strong support.
 
 - OpenAI
@@ -111,6 +117,7 @@ These should have dedicated adapters and strong support.
 - OpenRouter
 
 ### Tier 2: Strategic providers
+
 These should be straightforward to add once the abstractions are stable.
 
 - Google Gemini
@@ -119,6 +126,7 @@ These should be straightforward to add once the abstractions are stable.
 - Mistral
 
 ### Tier 3: Compatibility providers
+
 These should use a reusable adapter path where possible.
 
 - Groq
@@ -131,6 +139,7 @@ These should use a reusable adapter path where possible.
 These interfaces should live at the application boundary or in a shared abstraction layer used by the application.
 
 ### `IChatCompletionProvider`
+
 Handles non-streaming text generation.
 
 ```csharp
@@ -143,6 +152,7 @@ public interface IChatCompletionProvider
 ```
 
 ### `IStreamingCompletionProvider`
+
 Handles streaming partial output.
 
 ```csharp
@@ -155,6 +165,7 @@ public interface IStreamingCompletionProvider
 ```
 
 ### `IToolCallingProvider`
+
 Handles tool-call capable providers.
 
 ```csharp
@@ -167,6 +178,7 @@ public interface IToolCallingProvider
 ```
 
 ### `IModelCatalogProvider`
+
 Returns model metadata when available.
 
 ```csharp
@@ -178,6 +190,7 @@ public interface IModelCatalogProvider
 ```
 
 ### `IAiProviderHealthService`
+
 Reports whether a provider is available and usable.
 
 ```csharp
@@ -190,6 +203,7 @@ public interface IAiProviderHealthService
 ```
 
 ### `IAiCapabilityMapper`
+
 Maps provider/model capabilities into normalized flags.
 
 ```csharp
@@ -202,6 +216,7 @@ public interface IAiCapabilityMapper
 ```
 
 ### `IAiProviderRouter`
+
 Selects a provider/model for a given request.
 
 ```csharp
@@ -214,6 +229,7 @@ public interface IAiProviderRouter
 ```
 
 ### `IExplanationEnricher`
+
 Task-oriented abstraction used by the application layer.
 
 ```csharp
@@ -226,6 +242,7 @@ public interface IExplanationEnricher
 ```
 
 ### `IRootCauseNarrativeGenerator`
+
 Used to summarize multiple deterministic findings.
 
 ```csharp
@@ -440,23 +457,24 @@ public sealed class AiProviderCapabilities
 
 This matrix is intentionally conceptual. It should be resolved from provider/model metadata or static configuration rather than hardcoded application assumptions.
 
-| Provider | Streaming | Tool Calling | JSON/Structured Output | Local/Self-Hosted | Aggregator | Notes |
-|---|---|---:|---:|---:|---:|---|
-| OpenAI | Yes | Usually | Usually | No | No | First-class direct provider |
-| Anthropic | Yes | Usually | Partial/Provider-specific | No | No | First-class direct provider |
-| Ollama | Depends on model/runtime | Depends on model/runtime | Depends on model/runtime | Yes | No | Local-first provider |
-| OpenRouter | Usually | Depends on routed model | Depends on routed model | No | Yes | Aggregator / router |
-| Gemini | Usually | Provider-specific | Provider-specific | No | No | Strategic provider |
-| Bedrock | Provider-dependent | Provider-dependent | Provider-dependent | No | Yes/Managed | Meta-provider via AWS |
-| Azure OpenAI | Usually | Usually | Usually | No | Managed | Enterprise-hosted OpenAI family |
-| Mistral | Usually | Provider-specific | Provider-specific | No | No | Direct provider |
-| OpenAI-Compatible vendors | Varies | Varies | Varies | Varies | Varies | Never assume parity |
+| Provider                  | Streaming                |             Tool Calling |    JSON/Structured Output | Local/Self-Hosted |  Aggregator | Notes                           |
+| ------------------------- | ------------------------ | -----------------------: | ------------------------: | ----------------: | ----------: | ------------------------------- |
+| OpenAI                    | Yes                      |                  Usually |                   Usually |                No |          No | First-class direct provider     |
+| Anthropic                 | Yes                      |                  Usually | Partial/Provider-specific |                No |          No | First-class direct provider     |
+| Ollama                    | Depends on model/runtime | Depends on model/runtime |  Depends on model/runtime |               Yes |          No | Local-first provider            |
+| OpenRouter                | Usually                  |  Depends on routed model |   Depends on routed model |                No |         Yes | Aggregator / router             |
+| Gemini                    | Usually                  |        Provider-specific |         Provider-specific |                No |          No | Strategic provider              |
+| Bedrock                   | Provider-dependent       |       Provider-dependent |        Provider-dependent |                No | Yes/Managed | Meta-provider via AWS           |
+| Azure OpenAI              | Usually                  |                  Usually |                   Usually |                No |     Managed | Enterprise-hosted OpenAI family |
+| Mistral                   | Usually                  |        Provider-specific |         Provider-specific |                No |          No | Direct provider                 |
+| OpenAI-Compatible vendors | Varies                   |                   Varies |                    Varies |            Varies |      Varies | Never assume parity             |
 
 ## Routing Architecture
 
 Routing decides which provider and model should handle a request.
 
 ### Inputs to routing
+
 - explicit provider name
 - explicit model name
 - required capabilities
@@ -468,6 +486,7 @@ Routing decides which provider and model should handle a request.
 - fallback policy
 
 ### Routing outputs
+
 - resolved provider
 - resolved model
 - fallback chain
@@ -476,24 +495,31 @@ Routing decides which provider and model should handle a request.
 ### Example routing rules
 
 #### Rule 1: explicit provider wins
+
 If the request explicitly names a provider and it is enabled, use it.
 
 #### Rule 2: local-only mode
+
 If `RequireLocalOnly = true`, only local/self-hosted providers may be considered.
 
 #### Rule 3: privacy-sensitive mode
+
 If `PrivacySensitive = true`, route to configured privacy-approved providers only.
 
 #### Rule 4: capability matching
+
 If the request requires tool-calling or JSON mode, filter out providers that do not support the required capability.
 
 #### Rule 5: preferred defaults by task
+
 Examples:
+
 - explanation rewrite -> cheap/fast provider or local provider
 - root-cause narrative -> stronger reasoning-capable provider
 - bulk enrichment job -> cheaper provider first
 
 #### Rule 6: fallback policy
+
 If the selected provider fails and fallback is allowed, retry with the next valid provider in the fallback chain.
 
 ## Fallback Rules
@@ -501,6 +527,7 @@ If the selected provider fails and fallback is allowed, retry with the next vali
 Fallback should be explicit and conservative.
 
 ### When fallback is allowed
+
 - provider unavailable
 - rate limit hit
 - transient network failure
@@ -509,6 +536,7 @@ Fallback should be explicit and conservative.
 - provider returns unsupported-feature error for requested capability
 
 ### When fallback should not happen automatically
+
 - privacy-sensitive request where fallback provider violates policy
 - explicit provider requested with no fallback allowed
 - tool-calling required but fallback provider lacks tool support
@@ -527,16 +555,19 @@ This should be configurable, but a reasonable default might be:
 ### Example strategies
 
 #### Local-first strategy
+
 - Ollama
 - OpenRouter
 - OpenAI
 
 #### Premium-direct strategy
+
 - OpenAI
 - Anthropic
 - OpenRouter
 
 #### Cost-sensitive strategy
+
 - local provider
 - cheaper aggregator route
 - premium direct provider last
@@ -573,14 +604,14 @@ AI configuration should support provider definitions, routing defaults, privacy 
         "Enabled": true,
         "Type": "OpenRouter",
         "ApiKey": "${OPENROUTER_API_KEY}",
-        "DefaultModel": "openai/gpt-5-mini",
+        "DefaultModel": "stepfun/step-3.5-flash:free",
         "TimeoutSeconds": 60
       },
       "ollama": {
         "Enabled": true,
         "Type": "Ollama",
         "BaseUrl": "http://localhost:11434",
-        "DefaultModel": "qwen3:8b",
+        "DefaultModel": "qwen3.5:latest",
         "TimeoutSeconds": 120
       }
     },
@@ -599,7 +630,7 @@ AI configuration should support provider definitions, routing defaults, privacy 
     "Features": {
       "ExplanationEnrichment": {
         "DefaultProvider": "openrouter",
-        "DefaultModel": "openai/gpt-5-mini"
+        "DefaultModel": "stepfun/step-3.5-flash:free"
       },
       "RootCauseNarrative": {
         "DefaultProvider": "anthropic",
@@ -615,6 +646,7 @@ AI configuration should support provider definitions, routing defaults, privacy 
 Streaming should be a first-class behavior, not an afterthought.
 
 ### Rules
+
 - streaming should be requested explicitly or by feature configuration
 - providers that do not support streaming should fall back to buffered generation when allowed
 - streamed deltas should be normalized into `AiStreamEvent`
@@ -622,7 +654,9 @@ Streaming should be a first-class behavior, not an afterthought.
 - partial output should be safe to discard if the request is canceled
 
 ### Streaming event types
+
 Suggested event kinds:
+
 - `Started`
 - `TextDelta`
 - `ToolCallStarted`
@@ -634,7 +668,9 @@ Suggested event kinds:
 - `Error`
 
 ### Application guidance
+
 For InsightLogger’s likely use cases, streaming is most useful for:
+
 - UI-facing explanation generation
 - long narrative summaries
 
@@ -645,20 +681,25 @@ It is less important for tiny enrichment payloads or background jobs.
 Tool-calling support should be normalized but optional.
 
 ### Primary use cases in InsightLogger
+
 Potential future use cases:
+
 - retrieve internal error-pattern references during explanation generation
 - fetch rule documentation
 - consult a knowledge base of recurring fixes
 - inspect stored snippets or internal help articles
 
 ### Rules
+
 - tool-calling must only be enabled when explicitly requested
 - providers without tool support must be rejected for tool-required requests
 - tool call payloads should be normalized into `AiToolCall`
 - tool execution should stay outside the provider adapter; adapters only return requested tool invocations
 
 ### Important boundary
+
 Provider adapter responsibility ends at:
+
 - sending tool definitions
 - receiving tool-call requests
 - normalizing them
@@ -672,6 +713,7 @@ Provider errors vary wildly. The system needs one normalized error model.
 ### `AiErrorKind`
 
 Suggested values:
+
 - `Unknown`
 - `Authentication`
 - `Authorization`
@@ -703,15 +745,18 @@ public sealed class AiProviderException : Exception
 ```
 
 ### Error normalization rules
+
 - preserve original provider details for logging
 - map them into normalized error kinds for application logic
 - mark retryability explicitly
 - do not leak raw secrets or sensitive headers into logs or responses
 
 ### Fallback interaction
+
 Fallback should rely on normalized error categories, not provider-specific string matching.
 
 Examples:
+
 - `RateLimit` -> fallback maybe allowed
 - `Authentication` -> fallback usually not automatic unless another provider is already configured and allowed
 - `UnsupportedCapability` -> fallback allowed only if alternate provider supports required capability
@@ -722,6 +767,7 @@ Examples:
 Each provider should support health inspection where practical.
 
 ### Health dimensions
+
 - configured
 - reachable
 - authenticated
@@ -730,7 +776,9 @@ Each provider should support health inspection where practical.
 - tool-calling available if expected
 
 ### Health statuses
+
 Suggested values:
+
 - `Healthy`
 - `Degraded`
 - `Unavailable`
@@ -739,6 +787,7 @@ Suggested values:
 ## Logging and Telemetry
 
 Track at minimum:
+
 - provider selection count
 - model usage count
 - fallback rate
@@ -753,6 +802,7 @@ Track at minimum:
 The AI layer may handle build logs, code snippets, and potentially sensitive project details.
 
 ### Rules
+
 - do not send data to non-approved providers when privacy-sensitive mode is enabled
 - support local-only operation
 - redact obvious secrets before provider submission where appropriate
@@ -803,6 +853,7 @@ InsightLogger.Infrastructure/
 ## Example Application Usage
 
 ### Explanation enrichment flow
+
 1. application creates deterministic explanation payload
 2. application builds `AiGenerationRequest`
 3. router resolves provider/model
@@ -811,6 +862,7 @@ InsightLogger.Infrastructure/
 6. if AI fails, deterministic explanation remains
 
 ### Root-cause narrative flow
+
 1. application passes grouped findings and ranked causes
 2. AI generates narrative summary
 3. response metadata records provider/model/fallback use

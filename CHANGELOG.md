@@ -1,6 +1,9 @@
 ## Unreleased
 
 ### Added
+- Updated documentation to reflect the default OpenRouter model change from `openai/gpt-5-mini` to `stepfun/step-3.5-flash:free`.
+- Updated documentation to reflect the default Ollama model change from `qwen3:8b` to `qwen3.5:latest`.
+- Enabled API CORS in `Program.cs` with a permissive development policy (`AllowAnyOrigin`, `AllowAnyMethod`, `AllowAnyHeader`) so frontend clients can connect cross-origin; included an inline reminder to restrict origins for non-development environments.
 - Integrated `ObservabilityTelemetrySlice`:
 - Added OpenTelemetry tracing/metrics registration for ASP.NET Core, outgoing `HttpClient`, and custom `InsightLogger.Analysis` activities.
 - Added in-memory telemetry aggregation for analysis and HTTP activity, exposed through `GET /health/telemetry`.

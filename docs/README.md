@@ -207,6 +207,9 @@ Next planned increments remain:
 
 ## Recent maintenance updates
 
+- Updated docs to reflect the OpenRouter default model change from `openai/gpt-5-mini` to `stepfun/step-3.5-flash:free`.
+- Updated docs to reflect the Ollama default model change from `qwen3:8b` to `qwen3.5:latest`.
+- Enabled a global CORS policy in API startup (`AllowAnyOrigin`/`AllowAnyMethod`/`AllowAnyHeader`) so the separate frontend workspace can call backend endpoints during development; policy includes an in-code reminder to restrict allowed origins outside development environments.
 - Switched HealthEndpointsTests to ApiTestWebApplicationFactory so test analysis requests run against migrated SQLite schema (avoids 500s from missing Rules table in default factory configuration).
 
 - Made API header assertions in endpoint tests case-tolerant for `X-Request-Id` to avoid runtime header-casing differences (`X-Request-ID` vs `X-Request-Id`).

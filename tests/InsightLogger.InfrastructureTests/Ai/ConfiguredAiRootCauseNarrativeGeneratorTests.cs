@@ -38,7 +38,7 @@ public sealed class ConfiguredAiRootCauseNarrativeGeneratorTests
                 {
                     Type = "Ollama",
                     Enabled = true,
-                    DefaultModel = "qwen3:8b",
+                    DefaultModel = "qwen3.5:latest",
                     BaseUrl = "http://localhost:11434",
                     RequiresApiKey = false,
                     Capabilities = new AiProviderCapabilitiesOptions { SupportsJsonMode = true, IsLocal = true }
@@ -73,7 +73,7 @@ public sealed class ConfiguredAiRootCauseNarrativeGeneratorTests
 
         result.Success.Should().BeTrue();
         result.Provider.Should().Be("ollama");
-        result.Model.Should().Be("qwen3:8b");
+        result.Model.Should().Be("qwen3.5:latest");
         result.Summary.Should().Be("The build likely fails from one repeated missing-symbol issue.");
         result.GroupSummaries.Should().ContainSingle();
         result.RecommendedNextSteps.Should().ContainSingle();

@@ -1,11 +1,12 @@
 using System.Net;
 using System.Net.Http.Json;
 using FluentAssertions;
+using InsightLogger.ApiTests.Infrastructure;
 using InsightLogger.Contracts.Ai;
 using InsightLogger.Contracts.Analyses;
 using InsightLogger.Contracts.Health;
 using Microsoft.Extensions.Configuration;
-using InsightLogger.ApiTests.Infrastructure;
+
 namespace InsightLogger.ApiTests.Endpoints;
 
 public sealed class HealthEndpointsTests : IClassFixture<ApiTestWebApplicationFactory>
@@ -33,7 +34,6 @@ public sealed class HealthEndpointsTests : IClassFixture<ApiTestWebApplicationFa
         payload.Timestamp.Should().BeCloseTo(DateTimeOffset.UtcNow, TimeSpan.FromMinutes(1));
     }
 
-
     [Fact]
     public async Task GetTelemetry_ShouldReturn_Analysis_And_Http_Snapshot()
     {
@@ -47,9 +47,14 @@ public sealed class HealthEndpointsTests : IClassFixture<ApiTestWebApplicationFa
                 UseAiEnrichment: false,
                 IncludeRawDiagnostics: false,
                 IncludeGroups: false,
-                IncludeProcessingMetadata: true));
+                IncludeProcessingMetadata: true
+            )
+        );
 
-        using var analysisResponse = await client.PostAsJsonAsync("/analyze/compiler-error", request);
+        using var analysisResponse = await client.PostAsJsonAsync(
+            "/analyze/compiler-error",
+            request
+        );
         analysisResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
         using var response = await client.GetAsync("/health/telemetry");
@@ -61,7 +66,9 @@ public sealed class HealthEndpointsTests : IClassFixture<ApiTestWebApplicationFa
         payload.Service.Should().Be("InsightLogger.Api");
         payload.Analysis.TotalRequests.Should().BeGreaterThan(0);
         payload.Analysis.ToolSelections.Should().Contain(item => item.Name == "DotNet");
-        payload.Analysis.ParserSelections.Should().Contain(item => item.Name == "dotnet-diagnostic-parser-v1");
+        payload
+            .Analysis.ParserSelections.Should()
+            .Contain(item => item.Name == "dotnet-diagnostic-parser-v1");
         payload.Http.TotalRequests.Should().BeGreaterThan(0);
         payload.Http.Routes.Should().Contain(item => item.Name == "/analyze/compiler-error");
     }
@@ -71,28 +78,34 @@ public sealed class HealthEndpointsTests : IClassFixture<ApiTestWebApplicationFa
     {
         var factory = _factory.WithWebHostBuilder(builder =>
         {
-            builder.ConfigureAppConfiguration((_, configBuilder) =>
-            {
-                configBuilder.AddInMemoryCollection(new Dictionary<string, string?>
+            builder.ConfigureAppConfiguration(
+                (_, configBuilder) =>
                 {
-                    ["Ai:Enabled"] = "true",
-                    ["Ai:Providers:ollama:Type"] = "Ollama",
-                    ["Ai:Providers:ollama:Enabled"] = "true",
-                    ["Ai:Providers:ollama:DefaultModel"] = "qwen3:8b",
-                    ["Ai:Providers:ollama:BaseUrl"] = "http://localhost:11434",
-                    ["Ai:Providers:ollama:RequiresApiKey"] = "false",
-                    ["Ai:Providers:ollama:Capabilities:SupportsStreaming"] = "true",
-                    ["Ai:Providers:ollama:Capabilities:SupportsToolCalling"] = "true",
-                    ["Ai:Providers:ollama:Capabilities:SupportsJsonMode"] = "true",
-                    ["Ai:Providers:ollama:Capabilities:SupportsOpenAiCompatibility"] = "false",
-                    ["Ai:Providers:ollama:Capabilities:IsLocal"] = "true",
-                    ["Ai:Providers:openrouter:Type"] = "OpenRouter",
-                    ["Ai:Providers:openrouter:Enabled"] = "true",
-                    ["Ai:Providers:openrouter:DefaultModel"] = "openai/gpt-5-mini",
-                    ["Ai:Providers:openrouter:BaseUrl"] = "https://openrouter.ai/api/v1",
-                    ["Ai:Providers:openrouter:RequiresApiKey"] = "true"
-                });
-            });
+                    configBuilder.AddInMemoryCollection(
+                        new Dictionary<string, string?>
+                        {
+                            ["Ai:Enabled"] = "true",
+                            ["Ai:Providers:ollama:Type"] = "Ollama",
+                            ["Ai:Providers:ollama:Enabled"] = "true",
+                            ["Ai:Providers:ollama:DefaultModel"] = "qwen3.5:latest",
+                            ["Ai:Providers:ollama:BaseUrl"] = "http://localhost:11434",
+                            ["Ai:Providers:ollama:RequiresApiKey"] = "false",
+                            ["Ai:Providers:ollama:Capabilities:SupportsStreaming"] = "true",
+                            ["Ai:Providers:ollama:Capabilities:SupportsToolCalling"] = "true",
+                            ["Ai:Providers:ollama:Capabilities:SupportsJsonMode"] = "true",
+                            ["Ai:Providers:ollama:Capabilities:SupportsOpenAiCompatibility"] =
+                                "false",
+                            ["Ai:Providers:ollama:Capabilities:IsLocal"] = "true",
+                            ["Ai:Providers:openrouter:Type"] = "OpenRouter",
+                            ["Ai:Providers:openrouter:Enabled"] = "true",
+                            ["Ai:Providers:openrouter:DefaultModel"] =
+                                "stepfun/step-3.5-flash:free",
+                            ["Ai:Providers:openrouter:BaseUrl"] = "https://openrouter.ai/api/v1",
+                            ["Ai:Providers:openrouter:RequiresApiKey"] = "true",
+                        }
+                    );
+                }
+            );
         });
 
         using var client = factory.CreateClient();
@@ -102,11 +115,16 @@ public sealed class HealthEndpointsTests : IClassFixture<ApiTestWebApplicationFa
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         payload.Should().NotBeNull();
         payload!.Enabled.Should().BeTrue();
-        payload.Providers.Should().ContainSingle(provider => provider.Name == "ollama" && provider.Status == "healthy");
-        payload.Providers.Should().ContainSingle(provider =>
-            provider.Name == "openrouter" &&
-            provider.Status == "unconfigured" &&
-            provider.Reason == "API key is missing.");
+        payload
+            .Providers.Should()
+            .ContainSingle(provider => provider.Name == "ollama" && provider.Status == "healthy");
+        payload
+            .Providers.Should()
+            .ContainSingle(provider =>
+                provider.Name == "openrouter"
+                && provider.Status == "unconfigured"
+                && provider.Reason == "API key is missing."
+            );
     }
 
     [Fact]
@@ -114,32 +132,39 @@ public sealed class HealthEndpointsTests : IClassFixture<ApiTestWebApplicationFa
     {
         var factory = _factory.WithWebHostBuilder(builder =>
         {
-            builder.ConfigureAppConfiguration((_, configBuilder) =>
-            {
-                configBuilder.AddInMemoryCollection(new Dictionary<string, string?>
+            builder.ConfigureAppConfiguration(
+                (_, configBuilder) =>
                 {
-                    ["Ai:Enabled"] = "true",
-                    ["Ai:Providers:ollama:Type"] = "Ollama",
-                    ["Ai:Providers:ollama:Enabled"] = "true",
-                    ["Ai:Providers:ollama:DefaultModel"] = "qwen3:8b",
-                    ["Ai:Providers:ollama:BaseUrl"] = "http://localhost:11434",
-                    ["Ai:Providers:ollama:RequiresApiKey"] = "false",
-                    ["Ai:Providers:ollama:Capabilities:SupportsStreaming"] = "true",
-                    ["Ai:Providers:ollama:Capabilities:SupportsToolCalling"] = "true",
-                    ["Ai:Providers:ollama:Capabilities:SupportsJsonMode"] = "true",
-                    ["Ai:Providers:ollama:Capabilities:SupportsOpenAiCompatibility"] = "false",
-                    ["Ai:Providers:openrouter:Type"] = "OpenRouter",
-                    ["Ai:Providers:openrouter:Enabled"] = "true",
-                    ["Ai:Providers:openrouter:DefaultModel"] = "openai/gpt-5-mini",
-                    ["Ai:Providers:openrouter:BaseUrl"] = "https://openrouter.ai/api/v1",
-                    ["Ai:Providers:openrouter:RequiresApiKey"] = "true",
-                    ["Ai:Providers:openrouter:ApiKey"] = "or-secret",
-                    ["Ai:Providers:openrouter:Capabilities:SupportsStreaming"] = "true",
-                    ["Ai:Providers:openrouter:Capabilities:SupportsToolCalling"] = "true",
-                    ["Ai:Providers:openrouter:Capabilities:SupportsJsonMode"] = "true",
-                    ["Ai:Providers:openrouter:Capabilities:SupportsOpenAiCompatibility"] = "true"
-                });
-            });
+                    configBuilder.AddInMemoryCollection(
+                        new Dictionary<string, string?>
+                        {
+                            ["Ai:Enabled"] = "true",
+                            ["Ai:Providers:ollama:Type"] = "Ollama",
+                            ["Ai:Providers:ollama:Enabled"] = "true",
+                            ["Ai:Providers:ollama:DefaultModel"] = "qwen3.5:latest",
+                            ["Ai:Providers:ollama:BaseUrl"] = "http://localhost:11434",
+                            ["Ai:Providers:ollama:RequiresApiKey"] = "false",
+                            ["Ai:Providers:ollama:Capabilities:SupportsStreaming"] = "true",
+                            ["Ai:Providers:ollama:Capabilities:SupportsToolCalling"] = "true",
+                            ["Ai:Providers:ollama:Capabilities:SupportsJsonMode"] = "true",
+                            ["Ai:Providers:ollama:Capabilities:SupportsOpenAiCompatibility"] =
+                                "false",
+                            ["Ai:Providers:openrouter:Type"] = "OpenRouter",
+                            ["Ai:Providers:openrouter:Enabled"] = "true",
+                            ["Ai:Providers:openrouter:DefaultModel"] =
+                                "stepfun/step-3.5-flash:free",
+                            ["Ai:Providers:openrouter:BaseUrl"] = "https://openrouter.ai/api/v1",
+                            ["Ai:Providers:openrouter:RequiresApiKey"] = "true",
+                            ["Ai:Providers:openrouter:ApiKey"] = "or-secret",
+                            ["Ai:Providers:openrouter:Capabilities:SupportsStreaming"] = "true",
+                            ["Ai:Providers:openrouter:Capabilities:SupportsToolCalling"] = "true",
+                            ["Ai:Providers:openrouter:Capabilities:SupportsJsonMode"] = "true",
+                            ["Ai:Providers:openrouter:Capabilities:SupportsOpenAiCompatibility"] =
+                                "true",
+                        }
+                    );
+                }
+            );
         });
 
         using var client = factory.CreateClient();
@@ -148,16 +173,20 @@ public sealed class HealthEndpointsTests : IClassFixture<ApiTestWebApplicationFa
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         payload.Should().NotBeNull();
-        payload!.Items.Should().ContainSingle(item =>
-            item.Name == "ollama" &&
-            item.Type == "Ollama" &&
-            item.Capabilities.SupportsStreaming &&
-            item.Capabilities.SupportsToolCalling);
-        payload.Items.Should().ContainSingle(item =>
-            item.Name == "openrouter" &&
-            item.Capabilities.SupportsOpenAiCompatibility &&
-            item.DefaultModel == "openai/gpt-5-mini");
+        payload!
+            .Items.Should()
+            .ContainSingle(item =>
+                item.Name == "ollama"
+                && item.Type == "Ollama"
+                && item.Capabilities.SupportsStreaming
+                && item.Capabilities.SupportsToolCalling
+            );
+        payload
+            .Items.Should()
+            .ContainSingle(item =>
+                item.Name == "openrouter"
+                && item.Capabilities.SupportsOpenAiCompatibility
+                && item.DefaultModel == "stepfun/step-3.5-flash:free"
+            );
     }
 }
-
-

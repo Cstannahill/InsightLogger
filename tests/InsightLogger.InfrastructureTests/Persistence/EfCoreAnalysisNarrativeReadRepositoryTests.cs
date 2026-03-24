@@ -67,7 +67,7 @@ public sealed class EfCoreAnalysisNarrativeReadRepositoryTests : IAsyncLifetime
                 NarrativeRecommendedNextStepsJson = "[\"Start with the nullable cluster.\"]",
                 NarrativeSource = "ai",
                 NarrativeProvider = "ollama",
-                NarrativeModel = "qwen3:8b",
+                NarrativeModel = "qwen3.5:latest",
                 NarrativeStatus = "completed",
                 NarrativeFallbackUsed = false,
                 ProjectName = "InsightLogger.Api",

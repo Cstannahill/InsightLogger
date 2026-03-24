@@ -10,27 +10,31 @@ public sealed class ConfiguredAiProviderServicesTests
     [Fact]
     public async Task ConfiguredCatalog_Should_Map_Dictionary_Providers()
     {
-        var options = CreateOptionsMonitor(new AiOptions
-        {
-            Enabled = true,
-            Providers = new Dictionary<string, AiProviderOptions>(StringComparer.OrdinalIgnoreCase)
+        var options = CreateOptionsMonitor(
+            new AiOptions
             {
-                ["ollama"] = new()
+                Enabled = true,
+                Providers = new Dictionary<string, AiProviderOptions>(
+                    StringComparer.OrdinalIgnoreCase
+                )
                 {
-                    Type = "Ollama",
-                    Enabled = true,
-                    DefaultModel = "qwen3:8b",
-                    BaseUrl = "http://localhost:11434",
-                    Capabilities = new AiProviderCapabilitiesOptions
+                    ["ollama"] = new()
                     {
-                        SupportsStreaming = true,
-                        SupportsToolCalling = true,
-                        SupportsJsonMode = true,
-                        IsLocal = true
-                    }
-                }
+                        Type = "Ollama",
+                        Enabled = true,
+                        DefaultModel = "qwen3.5:latest",
+                        BaseUrl = "http://localhost:11434",
+                        Capabilities = new AiProviderCapabilitiesOptions
+                        {
+                            SupportsStreaming = true,
+                            SupportsToolCalling = true,
+                            SupportsJsonMode = true,
+                            IsLocal = true,
+                        },
+                    },
+                },
             }
-        });
+        );
 
         IAiProviderCatalog catalog = new ConfiguredAiProviderCatalog(options);
         var providers = await catalog.GetProvidersAsync();
@@ -43,28 +47,32 @@ public sealed class ConfiguredAiProviderServicesTests
     [Fact]
     public async Task HealthService_Should_Report_Unconfigured_When_ApiKey_Is_Required_But_Missing()
     {
-        var options = CreateOptionsMonitor(new AiOptions
-        {
-            Enabled = true,
-            Providers = new Dictionary<string, AiProviderOptions>(StringComparer.OrdinalIgnoreCase)
+        var options = CreateOptionsMonitor(
+            new AiOptions
             {
-                ["openrouter"] = new()
+                Enabled = true,
+                Providers = new Dictionary<string, AiProviderOptions>(
+                    StringComparer.OrdinalIgnoreCase
+                )
                 {
-                    Type = "OpenRouter",
-                    Enabled = true,
-                    DefaultModel = "openai/gpt-5-mini",
-                    BaseUrl = "https://openrouter.ai/api/v1",
-                    RequiresApiKey = true,
-                    Capabilities = new AiProviderCapabilitiesOptions
+                    ["openrouter"] = new()
                     {
-                        SupportsStreaming = true,
-                        SupportsToolCalling = true,
-                        SupportsJsonMode = true,
-                        SupportsOpenAiCompatibility = true
-                    }
-                }
+                        Type = "OpenRouter",
+                        Enabled = true,
+                        DefaultModel = "stepfun/step-3.5-flash:free",
+                        BaseUrl = "https://openrouter.ai/api/v1",
+                        RequiresApiKey = true,
+                        Capabilities = new AiProviderCapabilitiesOptions
+                        {
+                            SupportsStreaming = true,
+                            SupportsToolCalling = true,
+                            SupportsJsonMode = true,
+                            SupportsOpenAiCompatibility = true,
+                        },
+                    },
+                },
             }
-        });
+        );
 
         IAiProviderCatalog catalog = new ConfiguredAiProviderCatalog(options);
         IAiProviderHealthService healthService = new ConfiguredAiProviderHealthService(catalog);
@@ -98,9 +106,7 @@ public sealed class ConfiguredAiProviderServicesTests
         {
             public static readonly NoopDisposable Instance = new();
 
-            public void Dispose()
-            {
-            }
+            public void Dispose() { }
         }
     }
 }

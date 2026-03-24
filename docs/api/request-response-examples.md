@@ -60,10 +60,7 @@ Build FAILED.",
       "title": "Unknown symbol in current context",
       "explanation": "The compiler cannot resolve a referenced name in the current scope.",
       "confidence": 0.96,
-      "signals": [
-        "diagnostic-code:CS0103",
-        "category:missing-symbol"
-      ],
+      "signals": ["diagnostic-code:CS0103", "category:missing-symbol"],
       "likelyCauses": [
         "Typo in variable or member name",
         "Missing declaration",
@@ -278,10 +275,7 @@ NameError: name 'value' is not defined",
       "title": "Undefined name at runtime",
       "explanation": "Python attempted to use a name that does not exist in the current scope at runtime.",
       "confidence": 0.97,
-      "signals": [
-        "exception-type:NameError",
-        "category:missing-symbol"
-      ],
+      "signals": ["exception-type:NameError", "category:missing-symbol"],
       "suggestedFixes": [
         "Declare the variable before use.",
         "Check for a typo in the variable name.",
@@ -494,7 +488,7 @@ Content-Type: application/json
     "ai": {
       "requested": true,
       "provider": "openrouter",
-      "model": "openai/gpt-5-mini",
+      "model": "stepfun/step-3.5-flash:free",
       "status": "completed",
       "fallbackUsed": false
     }
@@ -523,6 +517,7 @@ Content-Type: application/json
 ### Response
 
 Status:
+
 - `400 Bad Request`
 
 ```json
@@ -635,7 +630,6 @@ Content-Type: application/json
 }
 ```
 
-
 ---
 
 ## Example 12: Dry-Run an Inline Rule Against Sample Content
@@ -729,7 +723,11 @@ Content-Type: application/json
       "title": "Unknown symbol in current context",
       "explanation": "The identifier is missing or out of scope.",
       "confidence": 0.97,
-      "signals": ["severity:error", "category:missing-symbol", "rule:Common CS0103 missing symbol guidance"],
+      "signals": [
+        "severity:error",
+        "category:missing-symbol",
+        "rule:Common CS0103 missing symbol guidance"
+      ],
       "suggestedFixes": ["Check spelling."]
     }
   ],
@@ -761,7 +759,6 @@ Content-Type: application/json
 
 These examples represent the intended shape of the API, not just happy-path payloads. They also show the expected behavior around optional AI enrichment, partial success, deterministic fallback, rules, and recurring pattern lookup.
 
-
 ---
 
 ## Example 14: Basic Service Health
@@ -782,7 +779,6 @@ GET /health
   "timestamp": "2026-03-24T04:10:00Z"
 }
 ```
-
 
 ---
 
@@ -881,13 +877,13 @@ GET /health/ai
     {
       "name": "ollama",
       "status": "healthy",
-      "defaultModel": "qwen3:8b",
+      "defaultModel": "qwen3.5:latest",
       "reason": "Configuration is ready."
     },
     {
       "name": "openrouter",
       "status": "unconfigured",
-      "defaultModel": "openai/gpt-5-mini",
+      "defaultModel": "stepfun/step-3.5-flash:free",
       "reason": "API key is missing."
     }
   ]
@@ -913,7 +909,7 @@ GET /providers/ai
       "name": "ollama",
       "type": "Ollama",
       "enabled": true,
-      "defaultModel": "qwen3:8b",
+      "defaultModel": "qwen3.5:latest",
       "capabilities": {
         "supportsStreaming": true,
         "supportsToolCalling": true,
@@ -925,7 +921,7 @@ GET /providers/ai
       "name": "openrouter",
       "type": "OpenRouter",
       "enabled": true,
-      "defaultModel": "openai/gpt-5-mini",
+      "defaultModel": "stepfun/step-3.5-flash:free",
       "capabilities": {
         "supportsStreaming": true,
         "supportsToolCalling": true,
@@ -1022,7 +1018,7 @@ Content-Type: application/json
     ],
     "source": "ai",
     "provider": "ollama",
-    "model": "qwen3:8b",
+    "model": "qwen3.5:latest",
     "status": "completed",
     "fallbackUsed": false
   },
@@ -1033,7 +1029,7 @@ Content-Type: application/json
     "ai": {
       "requested": true,
       "provider": "ollama",
-      "model": "qwen3:8b",
+      "model": "qwen3.5:latest",
       "status": "completed",
       "fallbackUsed": false,
       "feature": "root-cause-narrative"
@@ -1042,7 +1038,7 @@ Content-Type: application/json
       {
         "requested": true,
         "provider": "ollama",
-        "model": "qwen3:8b",
+        "model": "qwen3.5:latest",
         "status": "completed",
         "fallbackUsed": false,
         "feature": "root-cause-narrative"
@@ -1051,7 +1047,6 @@ Content-Type: application/json
   }
 }
 ```
-
 
 ---
 
@@ -1087,11 +1082,7 @@ GET /analyses/narratives?repository=InsightLogger&text=nullable&limit=2
       "fallbackUsed": false,
       "projectName": "InsightLogger.Api",
       "repository": "InsightLogger",
-      "matchedFields": [
-        "summary",
-        "groupSummaries",
-        "recommendedNextSteps"
-      ],
+      "matchedFields": ["summary", "groupSummaries", "recommendedNextSteps"],
       "matchSnippet": "...contains a nullable warning cluster. Start with the nullable cluster before cleanup..."
     }
   ]
@@ -1143,7 +1134,6 @@ GET /analyses/anl_7d64f4f1a2d148f5b4f9f9d49cc9cb55/narrative
   "repository": "InsightLogger"
 }
 ```
-
 
 ## Persisted analysis retrieval
 
@@ -1245,7 +1235,6 @@ GET /analyses/anl_01HXYZ004
 }
 ```
 
-
 ## Persist a build log with redacted raw-content storage
 
 ### Request
@@ -1301,4 +1290,3 @@ POST /privacy/retention/apply
   "analysesDeletedCount": 3
 }
 ```
-

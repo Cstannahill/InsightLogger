@@ -38,7 +38,7 @@ public sealed class ConfiguredAiExplanationEnricherTests
                 {
                     Type = "Ollama",
                     Enabled = true,
-                    DefaultModel = "qwen3:8b",
+                    DefaultModel = "qwen3.5:latest",
                     BaseUrl = "http://localhost:11434",
                     RequiresApiKey = false,
                     Capabilities = new AiProviderCapabilitiesOptions { SupportsJsonMode = true, IsLocal = true }
@@ -72,7 +72,7 @@ public sealed class ConfiguredAiExplanationEnricherTests
 
         result.Success.Should().BeTrue();
         result.Provider.Should().Be("ollama");
-        result.Model.Should().Be("qwen3:8b");
+        result.Model.Should().Be("qwen3.5:latest");
         result.Explanation.Should().Be("A clearer explanation.");
         result.LikelyCauses.Should().ContainInOrder("Typo in identifier", "Missing declaration");
         result.SuggestedFixes.Should().ContainInOrder("Fix the identifier spelling.", "Declare the symbol before use.");

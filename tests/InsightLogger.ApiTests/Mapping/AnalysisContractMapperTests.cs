@@ -42,7 +42,7 @@ public sealed class AnalysisContractMapperTests
             new AiProcessingMetadata(
                 Requested: true,
                 Provider: "ollama",
-                Model: "qwen3:8b",
+                Model: "qwen3.5:latest",
                 Status: "completed",
                 FallbackUsed: false,
                 Reason: null,
@@ -50,7 +50,7 @@ public sealed class AnalysisContractMapperTests
             new AiProcessingMetadata(
                 Requested: true,
                 Provider: "ollama",
-                Model: "qwen3:8b",
+                Model: "qwen3.5:latest",
                 Status: "completed",
                 FallbackUsed: false,
                 Reason: null,
@@ -76,7 +76,7 @@ public sealed class AnalysisContractMapperTests
                 groupSummaries: new[] { "AI group summary." },
                 recommendedNextSteps: new[] { "AI next step." },
                 provider: "ollama",
-                model: "qwen3:8b",
+                model: "qwen3.5:latest",
                 fallbackUsed: false),
             result.Processing,
             new[]

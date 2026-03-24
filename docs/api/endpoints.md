@@ -57,14 +57,17 @@ Use a consistent error response contract for validation, application, and provid
 ## Endpoint Summary
 
 ### Analysis
+
 - `POST /analyze/build-log`
 - `POST /analyze/compiler-error`
 
 ### Patterns and Known Errors
+
 - `GET /errors/{fingerprint}`
 - `GET /patterns/top`
 
 ### Rules
+
 - `POST /rules`
 - `GET /rules`
 - `GET /rules/{id}`
@@ -73,12 +76,14 @@ Use a consistent error response contract for validation, application, and provid
 - `POST /rules/test`
 
 ### Health and Metadata
+
 - `GET /health`
 - `GET /health/telemetry`
 - `GET /health/ai`
 - `GET /providers/ai`
 
 ### Future candidates
+
 - `GET /analyses`
 - `POST /analyze/build-log/stream`
 
@@ -89,6 +94,7 @@ Use a consistent error response contract for validation, application, and provid
 ## `POST /analyze/build-log`
 
 ### Purpose
+
 Analyze a full build or tool log and return structured diagnostics, groups, likely root causes, optional grouped narrative output, and optional enrichment.
 
 ### Request body
@@ -120,22 +126,23 @@ Program.cs(14,9): error CS0103: The name 'builderz' does not exist in the curren
 
 ### Request fields
 
-| Field | Type | Required | Notes |
-|---|---|---:|---|
-| `tool` | string | No | Optional hint such as `dotnet`, `typescript`, `python`, `vite`, `npm` |
-| `content` | string | Yes | Raw build/tool log content |
-| `projectName` | string | No | Optional project scope metadata |
-| `repository` | string | No | Optional repository name |
-| `branch` | string | No | Optional branch name |
-| `commitSha` | string | No | Optional commit SHA |
-| `environment` | object | No | Optional environment metadata |
-| `options` | object | No | Controls persistence and output detail, including separate AI task toggles |
+| Field         | Type   | Required | Notes                                                                      |
+| ------------- | ------ | -------: | -------------------------------------------------------------------------- |
+| `tool`        | string |       No | Optional hint such as `dotnet`, `typescript`, `python`, `vite`, `npm`      |
+| `content`     | string |      Yes | Raw build/tool log content                                                 |
+| `projectName` | string |       No | Optional project scope metadata                                            |
+| `repository`  | string |       No | Optional repository name                                                   |
+| `branch`      | string |       No | Optional branch name                                                       |
+| `commitSha`   | string |       No | Optional commit SHA                                                        |
+| `environment` | object |       No | Optional environment metadata                                              |
+| `options`     | object |       No | Controls persistence and output detail, including separate AI task toggles |
 
 `options.useAiEnrichment` targets primary-candidate explanation enrichment. `options.useAiRootCauseNarrative` targets grouped multi-diagnostic build-log narrative generation. They may be requested independently or together.
 
 ### Successful response
 
 Status:
+
 - `200 OK`
 
 ```json
@@ -209,19 +216,27 @@ Status:
 ### Failure responses
 
 #### Validation failure
+
 Status:
+
 - `400 Bad Request`
 
 #### Payload too large
+
 Status:
+
 - `413 Payload Too Large`
 
 #### Unsupported media type
+
 Status:
+
 - `415 Unsupported Media Type`
 
 #### Internal failure
+
 Status:
+
 - `500 Internal Server Error`
 
 ---
@@ -229,6 +244,7 @@ Status:
 ## `POST /analyze/compiler-error`
 
 ### Purpose
+
 Analyze a single compiler/runtime diagnostic or compact error block.
 
 ### Request body
@@ -251,6 +267,7 @@ Analyze a single compiler/runtime diagnostic or compact error block.
 ### Successful response
 
 Status:
+
 - `200 OK`
 
 ```json
@@ -300,17 +317,19 @@ Status:
 ## `GET /errors/{fingerprint}`
 
 ### Purpose
+
 Return details about a known diagnostic fingerprint or recurring pattern.
 
 ### Route parameters
 
-| Name | Type | Required | Notes |
-|---|---|---:|---|
-| `fingerprint` | string | Yes | Stable diagnostic fingerprint |
+| Name          | Type   | Required | Notes                         |
+| ------------- | ------ | -------: | ----------------------------- |
+| `fingerprint` | string |      Yes | Stable diagnostic fingerprint |
 
 ### Successful response
 
 Status:
+
 - `200 OK`
 
 ```json
@@ -339,7 +358,9 @@ Status:
 ### Failure responses
 
 #### Not found
+
 Status:
+
 - `404 Not Found`
 
 ---
@@ -347,21 +368,23 @@ Status:
 ## `GET /patterns/top`
 
 ### Purpose
+
 Return the most frequent error patterns over a time range or filter set.
 
 ### Query parameters
 
-| Name | Type | Required | Notes |
-|---|---|---:|---|
-| `tool` | string | No | Filter by tool kind |
-| `category` | string | No | Filter by category |
-| `from` | datetime | No | Inclusive UTC lower bound |
-| `to` | datetime | No | Inclusive UTC upper bound |
-| `limit` | int | No | Default 20, max should be constrained |
+| Name       | Type     | Required | Notes                                 |
+| ---------- | -------- | -------: | ------------------------------------- |
+| `tool`     | string   |       No | Filter by tool kind                   |
+| `category` | string   |       No | Filter by category                    |
+| `from`     | datetime |       No | Inclusive UTC lower bound             |
+| `to`       | datetime |       No | Inclusive UTC upper bound             |
+| `limit`    | int      |       No | Default 20, max should be constrained |
 
 ### Successful response
 
 Status:
+
 - `200 OK`
 
 ```json
@@ -394,6 +417,7 @@ Status:
 ## `POST /rules`
 
 ### Purpose
+
 Create a new custom rule.
 
 ### Request body
@@ -424,6 +448,7 @@ Create a new custom rule.
 ### Successful response
 
 Status:
+
 - `201 Created`
 
 ```json
@@ -446,21 +471,23 @@ Status:
 ## `GET /rules`
 
 ### Purpose
+
 List rules, optionally filtered.
 
 ### Query parameters
 
-| Name | Type | Required | Notes |
-|---|---|---:|---|
-| `enabled` | bool | No | Filter enabled/disabled |
-| `tool` | string | No | Filter by tool |
-| `tag` | string | No | Filter by tag |
-| `limit` | int | No | Default 50 |
-| `offset` | int | No | Default 0 |
+| Name      | Type   | Required | Notes                   |
+| --------- | ------ | -------: | ----------------------- |
+| `enabled` | bool   |       No | Filter enabled/disabled |
+| `tool`    | string |       No | Filter by tool          |
+| `tag`     | string |       No | Filter by tag           |
+| `limit`   | int    |       No | Default 50              |
+| `offset`  | int    |       No | Default 0               |
 
 ### Successful response
 
 Status:
+
 - `200 OK`
 
 ```json
@@ -485,11 +512,13 @@ Status:
 ## `GET /rules/{id}`
 
 ### Purpose
+
 Return one rule by identifier.
 
 ### Successful response
 
 Status:
+
 - `200 OK`
 
 ```json
@@ -527,11 +556,13 @@ Status:
 ## `PUT /rules/{id}`
 
 ### Purpose
+
 Replace an existing rule definition.
 
 ### Successful response
 
 Status:
+
 - `200 OK`
 
 ### Failure responses
@@ -544,6 +575,7 @@ Status:
 ## `PATCH /rules/{id}/enabled`
 
 ### Purpose
+
 Enable or disable a rule without replacing the whole document.
 
 ### Request body
@@ -557,6 +589,7 @@ Enable or disable a rule without replacing the whole document.
 ### Successful response
 
 Status:
+
 - `200 OK`
 
 ```json
@@ -572,6 +605,7 @@ Status:
 ## `POST /rules/test`
 
 ### Purpose
+
 Dry-run a saved rule or inline draft rule against sample content without creating or mutating any persisted analysis records.
 
 ### Request body
@@ -606,9 +640,11 @@ Dry-run a saved rule or inline draft rule against sample content without creatin
 ### Successful response
 
 Status:
+
 - `200 OK`
 
 Response includes:
+
 - whether the rule matched
 - parsed diagnostics and groups
 - root-cause candidates before and after rule application
@@ -627,11 +663,13 @@ Response includes:
 ## `GET /health`
 
 ### Purpose
+
 Return basic service health.
 
 ### Successful response
 
 Status:
+
 - `200 OK`
 
 ```json
@@ -643,20 +681,22 @@ Status:
 }
 ```
 
-
 ---
 
 ## `GET /health/telemetry`
 
 ### Purpose
+
 Return an in-process telemetry snapshot summarizing analysis-pipeline and HTTP activity.
 
 ### Notes
+
 This is intended for local/admin visibility, not as a replacement for a dedicated metrics backend.
 
 ### Successful response
 
 Status:
+
 - `200 OK`
 
 ```json
@@ -744,11 +784,13 @@ Status:
 ## `GET /health/ai`
 
 ### Purpose
+
 Return AI subsystem/provider health information.
 
 ### Successful response
 
 Status:
+
 - `200 OK`
 
 ```json
@@ -758,13 +800,13 @@ Status:
     {
       "name": "ollama",
       "status": "healthy",
-      "defaultModel": "qwen3:8b",
+      "defaultModel": "qwen3.5:latest",
       "reason": "Configuration is ready."
     },
     {
       "name": "openrouter",
       "status": "unconfigured",
-      "defaultModel": "openai/gpt-5-mini",
+      "defaultModel": "stepfun/step-3.5-flash:free",
       "reason": "API key is missing."
     }
   ]
@@ -776,11 +818,13 @@ Status:
 ## `GET /providers/ai`
 
 ### Purpose
+
 Return configured AI providers and normalized capability metadata.
 
 ### Successful response
 
 Status:
+
 - `200 OK`
 
 ```json
@@ -790,7 +834,7 @@ Status:
       "name": "ollama",
       "type": "Ollama",
       "enabled": true,
-      "defaultModel": "qwen3:8b",
+      "defaultModel": "qwen3.5:latest",
       "capabilities": {
         "supportsStreaming": true,
         "supportsToolCalling": true,
@@ -802,7 +846,7 @@ Status:
       "name": "openrouter",
       "type": "OpenRouter",
       "enabled": true,
-      "defaultModel": "openai/gpt-5-mini",
+      "defaultModel": "stepfun/step-3.5-flash:free",
       "capabilities": {
         "supportsStreaming": true,
         "supportsToolCalling": true,
@@ -837,6 +881,7 @@ Status:
 ```
 
 ### Suggested error codes
+
 - `validation_failed`
 - `not_found`
 - `payload_too_large`
@@ -848,10 +893,13 @@ Status:
 ## Response Design Notes
 
 ### Human + machine readable
+
 Responses should balance immediate usability and structured downstream consumption.
 
 ### AI provenance
+
 If AI is used, the response should indicate:
+
 - whether any AI task was used
 - per-task provider and model details
 - whether fallback occurred
@@ -860,6 +908,7 @@ If AI is used, the response should indicate:
 `processing.ai` remains a convenience summary for single-task cases. `processing.aiTasks` is the authoritative list when multiple AI tasks are requested in one analysis.
 
 ### Partial success
+
 The API should prefer partial structured success over total failure when deterministic analysis can still produce useful output.
 
 ## Future Endpoint Candidates
@@ -873,7 +922,6 @@ These are likely useful once the core API settles:
 ## Summary
 
 The InsightLogger API should stay small, explicit, and stable. The core endpoints are analysis, rules, patterns, health/provider metadata, and lightweight telemetry visibility. That is enough to support immediate local use while still leaving room for editor, UI, and CI integrations later.
-
 
 ## `GET /analyses/narratives`
 
@@ -894,7 +942,6 @@ Only persisted analyses that actually produced a grouped narrative are returned.
 
 When `text` is supplied, results are filtered with deterministic SQLite `LIKE` matching and then re-ranked in memory so direct summary hits beat weaker metadata-only hits. Search responses also include `matchedFields` and a lightweight `matchSnippet` to help a UI render result previews.
 
-
 ## `GET /analyses/{analysisId}`
 
 Returns the full persisted analysis for a prior run, including stored summary, diagnostics, groups, root-cause candidates, matched rules, narrative (if any), processing metadata, warnings, request context, and raw-content metadata.
@@ -911,15 +958,19 @@ Returns the persisted grouped diagnostic narrative for a prior analysis, includi
 ## Privacy
 
 ### `GET /privacy/settings`
+
 Returns the effective raw-content storage and retention policy.
 
 ### `POST /privacy/retention/apply`
+
 Applies configured retention windows to stored raw content and persisted analysis history.
 
 ### `DELETE /analyses/{analysisId}/raw-content`
+
 Purges stored raw content for a single persisted analysis while keeping the normalized analysis record/history.
 
 ### `DELETE /analyses/{analysisId}`
+
 Deletes a single persisted analysis and its related normalized history rows.
 
 ## Analyze request option update
@@ -927,7 +978,7 @@ Deletes a single persisted analysis and its related normalized history rows.
 `AnalyzeRequestOptionsContract` now supports `persistRawContent`.
 
 Notes:
+
 - `persistRawContent` only works when `persist` is `true`
 - stored raw content is still subject to global privacy settings
 - stored raw content may be redacted before persistence
-
