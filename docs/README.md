@@ -142,6 +142,7 @@ Next planned increments remain:
 
 ## Recent maintenance updates
 
+- Added root-level `README.md` with a standard public-facing project overview (purpose, features, endpoint summary, quick start, usage flow, architecture links) while keeping this file as the detailed implementation log.
 - Updated `.gitignore` for public-repo hygiene by ignoring local `.dotnet` cache directories while explicitly un-ignoring `samples/logs/**` so canonical sample log fixtures remain versioned.
 - Added `.gitignore` rules for SQLite artifacts under `App_Data` (`*.db`, `*.sqlite*`, `*.db-shm`, `*.db-wal`) so local runtime/test database files do not leak into source control.
 - Normalized all test projects to target `.NET 9` (`net9.0`) via `normalize-test-targets.ps1`.
