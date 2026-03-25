@@ -11,4 +11,7 @@ public sealed record RelatedAnalysisReferenceDto(
     string SummaryText,
     string? ProjectName,
     string? Repository,
-    IReadOnlyList<string> MatchingFingerprints);
+    IReadOnlyList<string> MatchingFingerprints,
+    IReadOnlyList<string>? MatchingDiagnosticCodes = null,
+    string? MatchType = null,
+    double? MatchScore = null);

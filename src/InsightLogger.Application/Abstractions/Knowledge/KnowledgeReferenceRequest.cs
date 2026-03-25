@@ -11,6 +11,7 @@ public sealed record KnowledgeReferenceRequest
         ToolKind toolKind,
         IReadOnlyList<string>? diagnosticCodes = null,
         IReadOnlyList<string>? fingerprints = null,
+        IReadOnlyList<string>? normalizedMessages = null,
         IReadOnlyList<DiagnosticCategory>? categories = null,
         IReadOnlyList<string>? matchedRuleIds = null,
         IReadOnlyDictionary<string, string>? context = null,
@@ -19,6 +20,7 @@ public sealed record KnowledgeReferenceRequest
         ToolKind = toolKind;
         DiagnosticCodes = NormalizeStrings(diagnosticCodes);
         Fingerprints = NormalizeStrings(fingerprints);
+        NormalizedMessages = NormalizeStrings(normalizedMessages);
         Categories = categories?
             .Distinct()
             .ToArray()
@@ -31,6 +33,7 @@ public sealed record KnowledgeReferenceRequest
     public ToolKind ToolKind { get; }
     public IReadOnlyList<string> DiagnosticCodes { get; }
     public IReadOnlyList<string> Fingerprints { get; }
+    public IReadOnlyList<string> NormalizedMessages { get; }
     public IReadOnlyList<DiagnosticCategory> Categories { get; }
     public IReadOnlyList<string> MatchedRuleIds { get; }
     public IReadOnlyDictionary<string, string>? Context { get; }

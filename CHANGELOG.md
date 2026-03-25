@@ -78,6 +78,11 @@
 - Added configurable `Privacy` policy options for raw-content storage enablement, write-time redaction, raw-content retention window, and persisted analysis retention window.
 - Added privacy control endpoints (`GET /privacy/settings`, `POST /privacy/retention/apply`, `DELETE /analyses/{analysisId}/raw-content`, `DELETE /analyses/{analysisId}`) plus API/OpenAPI/application/infrastructure/integration test coverage.
 - Added persisted raw-content redaction metadata (`rawContentRedacted`) and migration `20260324103000_AddAnalysisRawContentPrivacy`.
+- Integrated `HybridKnowledgeRetrievalPilotSlice`:
+- Registered knowledge-reference services/sources in infrastructure DI so enrichment paths are active in runtime.
+- Added bounded hybrid history retrieval in `EfCoreAnalysisReadRepository` (exact fingerprint/code/category plus normalized-message token overlap scoring).
+- Extended knowledge-reference request context to include normalized diagnostic messages for similarity lookup.
+- Added architecture documentation in `docs/architecture/knowledge-retrieval-pilot.md`.
 
 ### Fixed
 - Resolved `NpmDiagnosticParser` compile failure (`CS0136`) by renaming shadowed local variables in the missing-script parsing branch.

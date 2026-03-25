@@ -103,7 +103,19 @@ Build FAILED.",
     "durationMs": 32,
     "parser": "dotnet-diagnostic-parser-v1",
     "correlationId": "corr_demo_001"
-  }
+  },
+  "knowledgeReferences": [
+    {
+      "id": "internal:pattern:fp_cs0103_name_missing",
+      "kind": "recurring-pattern",
+      "source": "internal",
+      "title": "Unknown symbol in current context",
+      "summary": "Observed 38 times. Most recent persisted occurrence was 2026-03-24 15:21 UTC.",
+      "resourceType": "error-pattern",
+      "resourceId": "fp_cs0103_name_missing",
+      "tags": ["dotnet", "CS0103", "missingsymbol"]
+    }
+  ]
 }
 ```
 

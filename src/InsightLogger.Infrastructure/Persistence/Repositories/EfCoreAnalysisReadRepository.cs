@@ -117,6 +117,129 @@ public sealed class EfCoreAnalysisReadRepository : IAnalysisReadRepository
             .ToArray();
     }
 
+    public async Task<IReadOnlyList<RelatedAnalysisReferenceDto>> SearchSimilarAnalysesAsync(
+        ToolKind toolKind,
+        IReadOnlyCollection<string> fingerprints,
+        IReadOnlyCollection<string> diagnosticCodes,
+        IReadOnlyCollection<DiagnosticCategory> categories,
+        IReadOnlyCollection<string> normalizedMessages,
+        string? excludeAnalysisId,
+        string? projectName,
+        string? repository,
+        int limit,
+        CancellationToken cancellationToken = default)
+    {
+        if (limit <= 0)
+        {
+            return Array.Empty<RelatedAnalysisReferenceDto>();
+        }
+
+        var normalizedFingerprints = fingerprints
+            .Where(static value => !string.IsNullOrWhiteSpace(value))
+            .Select(static value => value.Trim())
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
+
+        var normalizedCodes = diagnosticCodes
+            .Where(static value => !string.IsNullOrWhiteSpace(value))
+            .Select(static value => value.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        var normalizedCategories = categories
+            .Distinct()
+            .ToArray();
+
+        var queryTokens = normalizedMessages
+            .SelectMany(Tokenize)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        var toolValue = toolKind.ToString();
+
+        var rawCandidates = await _dbContext.Diagnostics
+            .AsNoTracking()
+            .Include(diagnostic => diagnostic.Analysis)
+            .Where(diagnostic => diagnostic.ToolKind == toolValue)
+            .Where(diagnostic => string.IsNullOrWhiteSpace(excludeAnalysisId) || diagnostic.AnalysisId != excludeAnalysisId)
+            .Where(diagnostic => string.IsNullOrWhiteSpace(projectName) || diagnostic.Analysis.ProjectName == projectName)
+            .Where(diagnostic => string.IsNullOrWhiteSpace(repository) || diagnostic.Analysis.Repository == repository)
+            .Take(Math.Max(limit * 12, 24))
+            .Select(diagnostic => new
+            {
+                diagnostic.AnalysisId,
+                diagnostic.Analysis.CreatedAtUtc,
+                diagnostic.ToolKind,
+                diagnostic.Code,
+                diagnostic.Category,
+                diagnostic.Fingerprint,
+                diagnostic.NormalizedMessage,
+                diagnostic.Message,
+                diagnostic.Analysis.ProjectName,
+                diagnostic.Analysis.Repository
+            })
+            .ToListAsync(cancellationToken);
+
+        var candidates = rawCandidates
+            .OrderByDescending(static candidate => candidate.CreatedAtUtc)
+            .Select(static candidate => new HistoricalCandidate(
+                candidate.AnalysisId,
+                candidate.CreatedAtUtc,
+                ParseToolKind(candidate.ToolKind),
+                candidate.Code,
+                ParseCategory(candidate.Category),
+                candidate.Fingerprint,
+                candidate.NormalizedMessage,
+                candidate.Message,
+                candidate.ProjectName,
+                candidate.Repository))
+            .ToList();
+
+        if (candidates.Count == 0)
+        {
+            return Array.Empty<RelatedAnalysisReferenceDto>();
+        }
+
+        var ranked = candidates
+            .Select(candidate => ScoreCandidate(
+                candidate,
+                normalizedFingerprints,
+                normalizedCodes,
+                normalizedCategories,
+                queryTokens))
+            .Where(static scored => scored.Score >= 0.45d)
+            .OrderByDescending(static scored => scored.Score)
+            .ThenByDescending(static scored => scored.Candidate.CreatedAtUtc)
+            .GroupBy(static scored => scored.Candidate.AnalysisId, StringComparer.Ordinal)
+            .Select(static group =>
+            {
+                var best = group.First();
+                return new RelatedAnalysisReferenceDto(
+                    AnalysisId: best.Candidate.AnalysisId,
+                    ToolKind: best.Candidate.ToolKind,
+                    CreatedAtUtc: best.Candidate.CreatedAtUtc,
+                    SummaryText: BuildHistoricalSummaryText(best.Candidate, best.MatchType),
+                    ProjectName: best.Candidate.ProjectName,
+                    Repository: best.Candidate.Repository,
+                    MatchingFingerprints: group
+                        .Where(static entry => !string.IsNullOrWhiteSpace(entry.Candidate.Fingerprint))
+                        .Select(static entry => entry.Candidate.Fingerprint!)
+                        .Distinct(StringComparer.Ordinal)
+                        .ToArray(),
+                    MatchingDiagnosticCodes: group
+                        .Where(static entry => !string.IsNullOrWhiteSpace(entry.Candidate.Code))
+                        .Select(static entry => entry.Candidate.Code!)
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .ToArray(),
+                    MatchType: best.MatchType,
+                    MatchScore: Math.Round(best.Score, 2))
+                ;
+            })
+            .Take(limit)
+            .ToArray();
+
+        return ranked;
+    }
+
     private static PersistedAnalysisDto MapFallback(AnalysisEntity entity)
         => new(
             AnalysisId: entity.Id,
@@ -235,6 +358,93 @@ public sealed class EfCoreAnalysisReadRepository : IAnalysisReadRepository
         return $"{entity.TotalDiagnostics} diagnostics across {entity.GroupCount} groups; {entity.PrimaryIssueCount} primary issues identified.";
     }
 
+    private static (HistoricalCandidate Candidate, string MatchType, double Score) ScoreCandidate(
+        HistoricalCandidate candidate,
+        IReadOnlyCollection<string> fingerprints,
+        IReadOnlyCollection<string> diagnosticCodes,
+        IReadOnlyCollection<DiagnosticCategory> categories,
+        IReadOnlyCollection<string> queryTokens)
+    {
+        var score = 0d;
+        var matchType = "message-similarity";
+
+        if (!string.IsNullOrWhiteSpace(candidate.Fingerprint) &&
+            fingerprints.Contains(candidate.Fingerprint, StringComparer.Ordinal))
+        {
+            score += 0.72d;
+            matchType = "fingerprint";
+        }
+
+        if (!string.IsNullOrWhiteSpace(candidate.Code) &&
+            diagnosticCodes.Contains(candidate.Code, StringComparer.OrdinalIgnoreCase))
+        {
+            score += 0.55d;
+            if (!string.Equals(matchType, "fingerprint", StringComparison.Ordinal))
+            {
+                matchType = "diagnostic-code";
+            }
+        }
+
+        if (categories.Contains(candidate.Category))
+        {
+            score += 0.15d;
+        }
+
+        if (queryTokens.Count > 0)
+        {
+            var candidateTokens = Tokenize(candidate.NormalizedMessage);
+            if (candidateTokens.Count > 0)
+            {
+                var overlapCount = candidateTokens.Intersect(queryTokens, StringComparer.OrdinalIgnoreCase).Count();
+                if (overlapCount > 0)
+                {
+                    score += 0.25d * (double)overlapCount / Math.Max(queryTokens.Count, candidateTokens.Count);
+                }
+            }
+        }
+
+        return (candidate, matchType, Math.Min(score, 0.96d));
+    }
+
+    private static IReadOnlyCollection<string> Tokenize(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return Array.Empty<string>();
+        }
+
+        var separators = new[]
+        {
+            ' ', '\t', '\r', '\n', ',', '.', ':', ';', '/', '\\', '-', '_', '(', ')', '[', ']', '{', '}', '\'', '"', '`'
+        };
+
+        return value
+            .Split(separators, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(static token => token.Length >= 3)
+            .Select(static token => token.ToLowerInvariant())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+    }
+
+    private static string BuildHistoricalSummaryText(HistoricalCandidate candidate, string matchType)
+    {
+        var prefix = matchType switch
+        {
+            "fingerprint" => "Exact fingerprint match from persisted analysis history.",
+            "diagnostic-code" => "Similar persisted diagnostic matched by diagnostic code.",
+            _ => "Similar persisted diagnostic from analysis history."
+        };
+
+        var message = string.IsNullOrWhiteSpace(candidate.Message) ? candidate.NormalizedMessage : candidate.Message;
+        var trimmed = message.Trim();
+        if (trimmed.Length > 180)
+        {
+            trimmed = trimmed[..177] + "...";
+        }
+
+        return $"{prefix} {trimmed}";
+    }
+
     private static ToolKind ParseToolKind(string? value)
         => Enum.TryParse<ToolKind>(value, ignoreCase: true, out var parsed) ? parsed : ToolKind.Unknown;
 
@@ -246,6 +456,18 @@ public sealed class EfCoreAnalysisReadRepository : IAnalysisReadRepository
 
     private static DiagnosticCategory ParseCategory(string? value)
         => Enum.TryParse<DiagnosticCategory>(value, ignoreCase: true, out var parsed) ? parsed : DiagnosticCategory.Unknown;
+
+    private sealed record HistoricalCandidate(
+        string AnalysisId,
+        DateTimeOffset CreatedAtUtc,
+        ToolKind ToolKind,
+        string? Code,
+        DiagnosticCategory Category,
+        string? Fingerprint,
+        string NormalizedMessage,
+        string Message,
+        string? ProjectName,
+        string? Repository);
 }
 
 

@@ -49,6 +49,9 @@ public sealed class ErrorFingerprintQueryService : IErrorFingerprintQueryService
                 diagnosticCodes: string.IsNullOrWhiteSpace(enriched.DiagnosticCode)
                     ? Array.Empty<string>()
                     : [enriched.DiagnosticCode!],
+                normalizedMessages: string.IsNullOrWhiteSpace(enriched.CanonicalMessage)
+                    ? Array.Empty<string>()
+                    : [enriched.CanonicalMessage],
                 fingerprints: [enriched.Fingerprint],
                 categories: [enriched.Category],
                 matchedRuleIds: enriched.RelatedRules.Select(static rule => rule.Id).ToArray()),

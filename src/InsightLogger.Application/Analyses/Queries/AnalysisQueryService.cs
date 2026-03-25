@@ -44,6 +44,11 @@ public sealed class AnalysisQueryService : IAnalysisQueryService
                     .Select(static code => code!)
                     .Take(4)
                     .ToArray(),
+                normalizedMessages: dto.Diagnostics
+                    .Select(static diagnostic => diagnostic.NormalizedMessage)
+                    .Where(static message => !string.IsNullOrWhiteSpace(message))
+                    .Take(4)
+                    .ToArray(),
                 fingerprints: dto.RootCauseCandidates
                     .Select(static candidate => candidate.Fingerprint.Value)
                     .Concat(dto.Diagnostics

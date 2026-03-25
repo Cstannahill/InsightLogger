@@ -97,6 +97,8 @@ Use a consistent error response contract for validation, application, and provid
 
 Analyze a full build or tool log and return structured diagnostics, groups, likely root causes, optional grouped narrative output, and optional enrichment.
 
+Responses may also include `knowledgeReferences` that combine official docs, recurring-pattern history, matched-rule guidance, and similar persisted-analysis context.
+
 ### Request body
 
 ```json
@@ -246,6 +248,8 @@ Status:
 ### Purpose
 
 Analyze a single compiler/runtime diagnostic or compact error block.
+
+Responses may include `knowledgeReferences` from the same deterministic-first hybrid retrieval path used by build-log analysis.
 
 ### Request body
 

@@ -109,6 +109,41 @@ public sealed class InternalKnowledgeReferenceSource : IKnowledgeReferenceSource
             }
         }
 
+        if (references.Count < 8)
+        {
+            var projectName = TryGetContextValue(request.Context, "projectName");
+            var repository = TryGetContextValue(request.Context, "repository");
+            var historyMatches = await _analysisReadRepository.SearchSimilarAnalysesAsync(
+                toolKind: request.ToolKind,
+                fingerprints: request.Fingerprints,
+                diagnosticCodes: request.DiagnosticCodes,
+                categories: request.Categories,
+                normalizedMessages: request.NormalizedMessages,
+                excludeAnalysisId: request.AnalysisId,
+                projectName: projectName,
+                repository: repository,
+                limit: 3,
+                cancellationToken: cancellationToken);
+
+            foreach (var analysis in historyMatches)
+            {
+                var location = string.Join(" / ", new[] { analysis.ProjectName, analysis.Repository }.Where(static value => !string.IsNullOrWhiteSpace(value)));
+                var summary = string.IsNullOrWhiteSpace(location)
+                    ? $"Similar persisted analysis from {analysis.CreatedAtUtc:yyyy-MM-dd HH:mm} UTC. {analysis.SummaryText}"
+                    : $"Similar persisted analysis from {analysis.CreatedAtUtc:yyyy-MM-dd HH:mm} UTC for {location}. {analysis.SummaryText}";
+
+                references.Add(new KnowledgeReference(
+                    id: $"internal:analysis:similar:{analysis.AnalysisId}",
+                    kind: "prior-analysis",
+                    source: "internal",
+                    title: "Similar persisted analysis",
+                    summary: summary,
+                    resourceType: "analysis",
+                    resourceId: analysis.AnalysisId,
+                    tags: BuildHistoryTags(analysis)));
+            }
+        }
+
         return references
             .GroupBy(static item => item.Id, StringComparer.OrdinalIgnoreCase)
             .Select(static group => group.First())
@@ -132,6 +167,25 @@ public sealed class InternalKnowledgeReferenceSource : IKnowledgeReferenceSource
         if (pattern.Category != DiagnosticCategory.Unknown)
         {
             tags.Add(pattern.Category.ToString().ToLowerInvariant());
+        }
+
+        return tags;
+    }
+
+    private static IReadOnlyList<string> BuildHistoryTags(Application.Knowledge.DTOs.RelatedAnalysisReferenceDto analysis)
+    {
+        var tags = new List<string> { "history", analysis.ToolKind.ToString().ToLowerInvariant() };
+
+        if (!string.IsNullOrWhiteSpace(analysis.MatchType))
+        {
+            tags.Add($"match:{analysis.MatchType}");
+        }
+
+        if (analysis.MatchingDiagnosticCodes is not null)
+        {
+            tags.AddRange(analysis.MatchingDiagnosticCodes
+                .Where(static code => !string.IsNullOrWhiteSpace(code))
+                .Select(static code => code.Trim()));
         }
 
         return tags;

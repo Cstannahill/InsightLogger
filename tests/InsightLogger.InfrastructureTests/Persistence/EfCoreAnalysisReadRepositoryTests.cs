@@ -175,11 +175,12 @@ public sealed class EfCoreAnalysisReadRepositoryTests : IAsyncLifetime
                     Id = "diag_legacy",
                     AnalysisId = "anl_legacy",
                     ToolKind = "DotNet",
+                    Code = "CS0103",
                     Severity = "Error",
-                    Message = "Legacy message",
-                    NormalizedMessage = "Legacy message",
+                    Message = "The name 'servicez' does not exist in the current context",
+                    NormalizedMessage = "The name '{identifier}' does not exist in the current context",
                     RawSnippet = "Legacy snippet",
-                    Category = "Unknown",
+                    Category = "MissingSymbol",
                     OrderIndex = 0
                 }
             },
@@ -273,6 +274,28 @@ public sealed class EfCoreAnalysisReadRepositoryTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task SearchSimilarAnalysesAsync_ShouldReturnRankedSimilarHistory()
+    {
+        var repository = new EfCoreAnalysisReadRepository(_dbContext);
+
+        var result = await repository.SearchSimilarAnalysesAsync(
+            toolKind: ToolKind.DotNet,
+            fingerprints: Array.Empty<string>(),
+            diagnosticCodes: new[] { "CS0103" },
+            categories: new[] { DiagnosticCategory.MissingSymbol },
+            normalizedMessages: new[] { "The name '{identifier}' does not exist in the current context" },
+            excludeAnalysisId: "anl_001",
+            projectName: null,
+            repository: null,
+            limit: 5);
+
+        result.Should().ContainSingle();
+        result[0].AnalysisId.Should().Be("anl_legacy");
+        result[0].MatchType.Should().Be("diagnostic-code");
+        result[0].MatchScore.Should().NotBeNull();
+    }
+
+    [Fact]
     public async Task GetByAnalysisIdAsync_ShouldFallbackToNormalizedRows_WhenSnapshotMissing()
     {
         var repository = new EfCoreAnalysisReadRepository(_dbContext);
@@ -287,5 +310,7 @@ public sealed class EfCoreAnalysisReadRepositoryTests : IAsyncLifetime
         result.ProjectName.Should().Be("Legacy.Project");
     }
 }
+
+
 
 

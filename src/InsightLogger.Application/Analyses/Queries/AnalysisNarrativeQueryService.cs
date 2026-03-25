@@ -53,6 +53,11 @@ public sealed class AnalysisNarrativeQueryService : IAnalysisNarrativeQueryServi
                     .Select(static code => code!)
                     .Take(4)
                     .ToArray(),
+                normalizedMessages: persistedAnalysis.Diagnostics
+                    .Select(static diagnostic => diagnostic.NormalizedMessage)
+                    .Where(static message => !string.IsNullOrWhiteSpace(message))
+                    .Take(4)
+                    .ToArray(),
                 fingerprints: persistedAnalysis.RootCauseCandidates
                     .Select(static candidate => candidate.Fingerprint.Value)
                     .Concat(persistedAnalysis.Diagnostics
