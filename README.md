@@ -79,8 +79,8 @@ dotnet run --project src/InsightLogger.Api
 
 Then open:
 
-- Swagger UI: `http://localhost:5000/swagger`
-- OpenAPI JSON: `http://localhost:5000/openapi/v1.json`
+- Swagger UI: `http://localhost:5031/swagger`
+- OpenAPI JSON: `http://localhost:5031/openapi/v1.json`
 
 ## Typical workflow
 
